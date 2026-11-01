@@ -1,0 +1,135 @@
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm max-w-xl mx-auto relative" x-data="settingsApp()">
+  
+  <div class="flex items-center space-x-2 pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
+    <i data-lucide="settings" class="w-5 h-5 text-cyan-500"></i>
+    <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">Konfigurasi Master Controller Router</h3>
+  </div>
+
+  <form @submit.prevent="saveSettings()" class="space-y-4 text-xs">
+    <div>
+      <label class="block text-slate-400 mb-1">Host / IP Address</label>
+      <input type="text" x-model="form.host" placeholder="192.168.88.1" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-800 dark:text-slate-200 font-mono focus:ring-1 focus:ring-cyan-500">
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+        <div>
+            <label class="block text-slate-400 mb-1">Protokol</label>
+            <select x-model="form.protocol" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-cyan-500">
+                <option value="API">API</option>
+                <option value="API-SSL">API-SSL</option>
+                <option value="WWW">HTTP</option>
+                <option value="WWW-SSL">HTTPS</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-slate-400 mb-1">Port</label>
+            <input type="text" x-model="form.port" placeholder="8728" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-800 dark:text-slate-200 font-mono focus:ring-1 focus:ring-cyan-500">
+        </div>
+    </div>
+
+    <div>
+      <label class="block text-slate-400 mb-1">Username</label>
+      <input type="text" x-model="form.username" placeholder="admin" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-800 dark:text-slate-200 font-mono focus:ring-1 focus:ring-cyan-500">
+    </div>
+
+    <div>
+      <label class="block text-slate-400 mb-1">Password</label>
+      <input type="password" x-model="form.password" placeholder="••••••••" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-800 dark:text-slate-200 font-mono focus:ring-1 focus:ring-cyan-500">
+    </div>
+
+    <div class="flex justify-end pt-4">
+      <button type="submit" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-lg shadow transition flex items-center space-x-2" :disabled="loading">
+        <i data-lucide="save" class="w-4 h-4"></i>
+        <span x-text="loading ? 'Menyimpan...' : 'Simpan Kredensial'"></span>
+      </button>
+    </div>
+  </form>
+
+  <!-- ========================================== -->
+  <!-- MODAL NOTIFIKASI HASIL PENYIMPANAN         -->
+  <!-- ========================================== -->
+  <div x-show="showModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" style="display: none;" x-transition.opacity>
+    <div @click.outside="showModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-sm shadow-xl text-center transform transition-all" x-transition.scale.90>
+      
+      <!-- Ikon Animasi -->
+      <div class="mx-auto flex items-center justify-center h-14 w-14 rounded-full mb-4"
+           :class="modalType === 'success' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-rose-500/20 text-rose-500'">
+        <i data-lucide="check-circle-2" x-show="modalType === 'success'" class="w-8 h-8"></i>
+        <i data-lucide="x-octagon" x-show="modalType === 'error'" class="w-8 h-8"></i>
+      </div>
+      
+      <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2" x-text="modalTitle"></h3>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-6" x-text="modalMessage"></p>
+      
+      <button @click="showModal = false" class="w-full px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-lg transition">
+        Tutup
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('settingsApp', () => ({
+      form: { host: '', port: '8728', protocol: 'API', username: '', password: '' },
+      loading: false,
+      
+      // State Modal
+      showModal: false,
+      modalType: 'success',
+      modalTitle: '',
+      modalMessage: '',
+      
+      init() {
+        this.loadSettings();
+      },
+
+      async loadSettings() {
+        try {
+          const res = await fetch('/api/settings/controller');
+          const json = await res.json();
+          if (json.success && json.data) {
+            this.form = { ...this.form, ...json.data };
+          }
+        } catch (err) {
+          console.error('Gagal memuat setting controller', err);
+        }
+      },
+
+      async saveSettings() {
+        this.loading = true;
+        try {
+          const res = await fetch('/api/settings/controller', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.form)
+          });
+          const json = await res.json();
+          
+          if (json.success) {
+            this.showNotification('success', 'Berhasil Disimpan', 'Kredensial Controller Sesuai !!');
+          } else {
+            this.showNotification('error', 'Gagal Menyimpan', json.message);
+          }
+        } catch (err) {
+          this.showNotification('error', 'Kesalahan Jaringan', 'Terjadi kesalahan saat menghubungi server.');
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      showNotification(type, title, message) {
+        this.modalType = type;
+        this.modalTitle = title;
+        this.modalMessage = message;
+        this.showModal = true;
+        
+        // Render ulang ikon Lucide untuk ikon modal
+        setTimeout(() => {
+          if (window.lucide) window.lucide.createIcons();
+        }, 50);
+      }
+    }));
+  });
+</script>

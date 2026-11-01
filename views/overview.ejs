@@ -1,0 +1,344 @@
+<div x-show="activeTab === 'overview'" class="space-y-6 pt-4" x-cloak
+     x-init="
+        $watch('networks', () => window.initAllTopologies(networks, members, parseBool));
+        $watch('members', () => window.initAllTopologies(networks, members, parseBool));
+        setTimeout(() => window.initAllTopologies(networks, members, parseBool), 400);
+     ">
+  
+  <!-- 1. HEADER OVERVIEW -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition-colors">
+    <div>
+      <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">Network Topology & System Overview</h3>
+      <p class="text-xs text-slate-400 mt-0.5">Enterprise Topology dengan Server-Side Global Position Sync & Full ID Display.</p>
+    </div>
+  </div>
+
+  <!-- 2. QUICK STATS CARDS -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm transition-colors">
+      <span class="text-xs text-slate-400 uppercase font-semibold">Total Networks</span>
+      <div class="flex items-center justify-between mt-2">
+        <h4 class="text-xl font-bold text-slate-800 dark:text-slate-100" x-text="networks.length">0</h4>
+        <i data-lucide="globe" class="w-5 h-5 text-cyan-500"></i>
+      </div>
+    </div>
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm transition-colors">
+      <span class="text-xs text-slate-400 uppercase font-semibold">Total Members</span>
+      <div class="flex items-center justify-between mt-2">
+        <h4 class="text-xl font-bold text-slate-800 dark:text-slate-100" x-text="members.length">0</h4>
+        <i data-lucide="users" class="w-5 h-5 text-emerald-500"></i>
+      </div>
+    </div>
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm transition-colors">
+      <span class="text-xs text-slate-400 uppercase font-semibold">Controller Status</span>
+      <div class="flex items-center justify-between mt-2">
+        <h4 class="text-xl font-bold text-emerald-600 dark:text-emerald-400" x-text="networks.length > 0 ? 'Active Hub' : 'Standby'">Active Hub</h4>
+        <i data-lucide="shield-check" class="w-5 h-5 text-indigo-500"></i>
+      </div>
+    </div>
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm transition-colors">
+      <span class="text-xs text-slate-400 uppercase font-semibold">Access Role</span>
+      <div class="flex items-center justify-between mt-2">
+        <h4 class="text-xl font-bold text-purple-600 dark:text-purple-400 uppercase" x-text="window.USER_ROLE">Admin</h4>
+        <i data-lucide="user-cog" class="w-5 h-5 text-purple-500"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. CONTAINER UTAMA: MULTI-CANVAS TERPISAH -->
+  <div class="space-y-8 mt-6">
+    <template x-for="net in networks" :key="net['.id'] || net.network">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm transition-colors">
+        <!-- Container Kanvas (Posisi aman di belakang header saat discroll) -->
+        <div class="relative w-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#020617] transition-colors mt-2">
+          <div class="absolute inset-0 bg-[linear-gradient(to_right,#cbd5e1_1px,transparent_1px),linear-gradient(to_bottom,#cbd5e1_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:2rem_2rem] pointer-events-none opacity-40 transition-colors"></div>
+          
+          <div :id="'canvas_' + String(net['.id'] || net.network).replace(/[^a-zA-Z0-9]/g, '')" class="w-full h-[650px] relative outline-none cursor-grab active:cursor-grabbing"></div>
+        </div>
+
+      </div>
+    </template>
+
+    <template x-if="networks.length === 0">
+      <div class="text-center text-xs text-slate-500 italic py-10 bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-400">
+        Belum ada data Controller Network yang terdeteksi pada sistem.
+      </div>
+    </template>
+  </div>
+
+</div>
+
+<script>
+if (!window.visNetworksRegistry) {
+    window.visNetworksRegistry = {};
+}
+
+async function fetchServerPositions() {
+    try {
+        const res = await fetch('/api/topology/positions');
+        if (res.ok) {
+            return await res.json();
+        }
+    } catch (e) {}
+    return {};
+}
+
+async function saveServerPositions(positionsObj) {
+    try {
+        await fetch('/api/topology/positions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(positionsObj)
+        });
+    } catch (e) {}
+}
+
+window.initAllTopologies = async function(networks, members, parseBoolHelper) {
+    if (typeof vis === 'undefined') return;
+
+    const checkBool = (val) => {
+        if (parseBoolHelper) return parseBoolHelper(val);
+        return String(val) === 'true' || val === true || val === '*1';
+    };
+
+    const isDarkMode = document.documentElement.classList.contains('dark') || 
+                       document.body.classList.contains('dark') || 
+                       document.documentElement.getAttribute('data-theme') === 'dark';
+
+    const theme = isDarkMode ? {
+        cardBg: 'linear-gradient(135deg, #0f172a 0%, #090d16 100%)',
+        textColor: '#f8fafc',
+        subText: '#94a3b8',
+        mutedText: '#64748b',
+        boxBg: 'rgba(255, 255, 255, 0.03)',
+        boxBorder: 'rgba(255, 255, 255, 0.06)',
+        divider: 'rgba(255, 255, 255, 0.06)'
+    } : {
+        cardBg: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+        textColor: '#0f172a',
+        subText: '#475569',
+        mutedText: '#94a3b8',
+        boxBg: 'rgba(0, 0, 0, 0.02)',
+        boxBorder: 'rgba(0, 0, 0, 0.06)',
+        divider: 'rgba(0, 0, 0, 0.08)'
+    };
+
+    const storedPositions = await fetchServerPositions();
+
+    const getControllerSVG = (name, id, instance, mtu, isPrivate, subnetRange, memberCount) => {
+        const modeText = isPrivate ? 'PRIVATE' : 'PUBLIC';
+        const modeColor = isPrivate ? '#c084fc' : '#0ea5e9'; 
+        const modeBg = isPrivate ? 'rgba(192, 132, 252, 0.12)' : 'rgba(14, 165, 233, 0.12)';
+
+        const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="410" height="155">
+            <foreignObject x="0" y="0" width="100%" height="100%">
+                <div xmlns="http://www.w3.org/1999/xhtml" style="background: ${theme.cardBg}; border: 2px solid #06b6d4; border-radius: 14px; padding: 14px; font-family: ui-sans-serif, system-ui, sans-serif; color: ${theme.textColor}; width: 410px; height: 155px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 10px 25px -5px rgba(6, 182, 212, 0.2), inset 0 0 20px rgba(6, 182, 212, 0.08); backdrop-filter: blur(10px);">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <div style="width: 34px; height: 34px; border-radius: 8px; background: rgba(6, 182, 212, 0.12); border: 1px solid rgba(6, 182, 212, 0.3); display: flex; align-items: center; justify-content: center; color: #0891b2;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>
+                            </div>
+                            <div style="line-height: 1.2;">
+                                <div style="font-size: 14px; font-weight: 800; color: ${theme.textColor}; letter-spacing: 0.5px;">${name}</div>
+                                <div style="font-size: 11px; font-family: monospace; font-weight: 700; color: #0891b2; margin-top: 3px;">ID: ${id}</div>
+                            </div>
+                        </div>
+                        <div style="border: 1px solid ${modeColor}; background: ${modeBg}; color: ${modeColor}; padding: 3px 8px; border-radius: 6px; font-size: 9px; font-weight: 800; letter-spacing: 0.5px;">
+                            ${modeText}
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <div style="background: ${theme.boxBg}; border: 1px solid ${theme.boxBorder}; padding: 6px 8px; border-radius: 8px; font-size: 10px; font-family: monospace;">
+                            <span style="color: ${theme.mutedText}; display: block; font-size: 8px; margin-bottom: 2px;">SUBNET / RANGE</span>
+                            <strong style="color: #0284c7; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; display: block;" title="${subnetRange}">${subnetRange || 'Unassigned'}</strong>
+                        </div>
+                        <div style="background: ${theme.boxBg}; border: 1px solid ${theme.boxBorder}; padding: 6px 8px; border-radius: 8px; font-size: 10px; font-family: monospace;">
+                            <span style="color: ${theme.mutedText}; display: block; font-size: 8px; margin-bottom: 2px;">TOTAL MEMBERS</span>
+                            <strong style="color: #059669;">${memberCount} Nodes Active</strong>
+                        </div>
+                    </div>
+
+                    <div style="border-top: 1px solid ${theme.divider}; padding-top: 6px; display: flex; justify-content: space-around; font-size: 11px; font-family: monospace; color: ${theme.subText};">
+                        <div>Instance: <strong style="color: ${theme.textColor};">${instance}</strong></div>
+                        <div>MTU: <strong style="color: ${theme.textColor};">${mtu}</strong></div>
+                    </div>
+
+                </div>
+            </foreignObject>
+        </svg>`;
+        return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    };
+
+    const getMemberSVG = (name, ip, id, lastSeen, isConnected) => {
+        const borderColor = isConnected ? '#10b981' : '#f43f5e'; 
+        const glowColor = isConnected ? 'rgba(16, 185, 129, 0.2)' : 'rgba(244, 63, 94, 0.2)';
+        const badgeBg = isConnected ? 'rgba(16,185,129,0.12)' : 'rgba(244,63,94,0.12)';
+        const badgeText = isConnected ? '#059669' : '#e11d48';
+        const statusText = isConnected ? 'ONLINE' : 'OFFLINE';
+        const dotColor = isConnected ? '#10b981' : '#f43f5e';
+
+        const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="310" height="135">
+            <foreignObject x="0" y="0" width="100%" height="100%">
+                <div xmlns="http://www.w3.org/1999/xhtml" style="background: ${theme.cardBg}; border: 2px solid ${borderColor}; border-radius: 12px; padding: 12px; font-family: ui-sans-serif, system-ui, sans-serif; color: ${theme.textColor}; width: 310px; height: 135px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 10px 25px -5px ${glowColor}, inset 0 0 15px ${glowColor}; backdrop-filter: blur(10px);">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <div style="width: 30px; height: 30px; border-radius: 8px; background: ${badgeBg}; border: 1px solid ${borderColor}; display: flex; align-items: center; justify-content: center; color: ${badgeText};">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M9 1v3"/><path d="M15 1v3"/><path d="M9 20v3"/><path d="M15 20v3"/><path d="M1 9h3"/><path d="M1 15h3"/><path d="M20 9h3"/><path d="M20 15h3"/></svg>
+                            </div>
+                            <div style="line-height: 1.2;">
+                                <div style="font-size: 13px; font-weight: 800; color: ${theme.textColor}; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; width: 105px;">${name}</div>
+                                <div style="font-size: 10px; font-family: monospace; font-weight: 700; color: #0891b2; margin-top: 2px;">${ip}</div>
+                            </div>
+                        </div>
+                        <div style="border: 1px solid ${borderColor}; background: ${badgeBg}; color: ${badgeText}; padding: 3px 8px; border-radius: 6px; font-size: 9px; font-weight: 800; letter-spacing: 0.5px;">
+                            ${statusText}
+                        </div>
+                    </div>
+
+                    <div style="background: ${theme.boxBg}; border: 1px solid ${theme.boxBorder}; padding: 6px 8px; border-radius: 8px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 6px; font-size: 10px; font-family: monospace;">
+                        <div style="overflow: hidden;">
+                            <span style="color: ${theme.mutedText}; display: block; font-size: 8px; margin-bottom: 1px;">MEMBER ID</span>
+                            <strong style="color: ${theme.textColor}; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; display: block;" title="${id}">${id}</strong>
+                        </div>
+                        <div>
+                            <span style="color: ${theme.mutedText}; display: block; font-size: 8px; margin-bottom: 1px;">LAST SEEN</span>
+                            <div style="display: flex; align-items: center; gap: 4px; margin-top: 1px;">
+                                <div style="width: 6px; height: 6px; border-radius: 50%; background-color: ${dotColor}; box-shadow: 0 0 8px ${dotColor};"></div>
+                                <strong style="color: ${theme.subText}; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" title="${lastSeen}">${lastSeen}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="border-top: 1px solid ${theme.divider}; padding-top: 5px; display: flex; justify-content: space-between; align-items: center; font-size: 9px; font-family: monospace; color: ${theme.subText};">
+                        <span>ZeroTier Virtual Node</span>
+                        <span style="color: ${badgeText}; font-weight: 700;">${isConnected ? '● Active Tunnel Secure' : '○ Connection Lost'}</span>
+                    </div>
+
+                </div>
+            </foreignObject>
+        </svg>`;
+        return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    };
+
+    (networks || []).forEach(net => {
+        const netKey = String(net['.id'] || net.network).replace(/[^a-zA-Z0-9]/g, '');
+        const containerId = 'canvas_' + netKey;
+        
+        setTimeout(() => {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const ctrlId = 'ctrl_' + netKey;
+            const nodesData = [];
+            const edgesData = [];
+
+            const isPrivateNet = checkBool(net.private) || String(net.private) === 'true' || net.private === '*1';
+            const controllerSubnet = net['ip-range'] || net.subnet || net['assigned-address'] || net.address || net['bridge'] || 'Managed Subnet';
+
+            const networkMembers = (members || []).filter(m => {
+                const netId = net['.id'] || ''; 
+                const netNetwork = net.network || net['network-id'] || ''; 
+                const itemNetwork = m.network || '';
+                return itemNetwork === netId || itemNetwork === net.name || itemNetwork === netNetwork || !itemNetwork;
+            });
+
+            let ctrlPos = storedPositions[ctrlId] || {};
+            nodesData.push({
+                id: ctrlId,
+                shape: 'image',
+                image: getControllerSVG(
+                    net.name || 'ZT Controller', 
+                    net.network || net['network-id'], 
+                    net.instance || '-', 
+                    net.mtu || '-', 
+                    isPrivateNet, 
+                    controllerSubnet, 
+                    networkMembers.length
+                ),
+                shapeProperties: { useImageSize: true },
+                x: ctrlPos.x !== undefined ? ctrlPos.x : undefined,
+                y: ctrlPos.y !== undefined ? ctrlPos.y : undefined,
+                fixed: false
+            });
+
+            networkMembers.forEach(m => {
+                const mId = 'mem_' + netKey + '_' + String(m['.id'] || m['zt-address']).replace(/[^a-zA-Z0-9]/g, '');
+                const isConnected = checkBool(m.authorized);
+                const fullZtId = m['zt-address'] || m['zts-id'] || '---';
+                
+                let memPos = storedPositions[mId] || {};
+                nodesData.push({
+                    id: mId,
+                    shape: 'image',
+                    image: getMemberSVG(
+                        m.name || 'Branch Node', 
+                        m['ip-address'] || m.ip || 'Unassigned', 
+                        fullZtId, 
+                        m['last-seen'] || 'Active', 
+                        isConnected
+                    ),
+                    shapeProperties: { useImageSize: true },
+                    x: memPos.x !== undefined ? memPos.x : undefined,
+                    y: memPos.y !== undefined ? memPos.y : undefined,
+                    fixed: false
+                });
+
+                // Garis dipertipis menjadi 1.5 pixel agar terlihat lebih elegan dan rapi
+                edgesData.push({
+                    from: ctrlId,
+                    to: mId,
+                    color: { 
+                        color: isConnected ? '#10b981' : '#f43f5e',
+                        highlight: isConnected ? '#34d399' : '#fb7185',
+                        opacity: 0.9
+                    },
+                    width: 1.25,
+                    dashes: isConnected ? false : [5, 5], 
+                    shadow: {
+                        enabled: isConnected,
+                        color: '#10b981',
+                        size: 3,
+                        x: 0,
+                        y: 0
+                    },
+                    smooth: { type: 'cubicBezier', forceDirection: 'vertical', roundness: 0.5 }
+                });
+            });
+
+            if (window.visNetworksRegistry[netKey]) {
+                const netInstance = window.visNetworksRegistry[netKey];
+                netInstance.body.data.nodes.update(nodesData);
+                netInstance.body.data.edges.update(edgesData);
+            } else {
+                const data = { nodes: new vis.DataSet(nodesData), edges: new vis.DataSet(edgesData) };
+                const options = {
+                    physics: { enabled: false },
+                    interaction: { hover: false, zoomView: true, dragView: true, dragNodes: true }
+                };
+
+                const newNetwork = new vis.Network(container, data, options);
+
+                newNetwork.on("dragEnd", async function(params) {
+                    const currentStored = await fetchServerPositions();
+                    const positions = newNetwork.getPositions(params.nodes);
+                    
+                    params.nodes.forEach(nodeId => {
+                        if (positions[nodeId]) {
+                            currentStored[nodeId] = { x: positions[nodeId].x, y: positions[nodeId].y };
+                        }
+                    });
+                    
+                    await saveServerPositions(currentStored);
+                });
+
+                window.visNetworksRegistry[netKey] = newNetwork;
+            }
+        }, 100);
+    });
+};
+</script>

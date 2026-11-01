@@ -1,0 +1,111 @@
+<div x-show="isMobileMenuOpen" @click="isMobileMenuOpen = false" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 md:hidden" x-cloak></div>
+
+<aside :class="isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'" class="fixed md:static inset-y-0 left-0 z-50 w-72 h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-shrink-0 flex flex-col justify-between transition-transform duration-300 shadow-xl md:shadow-none">
+  <div>
+    <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-14 h-14 rounded-xl flex items-center justify-center overflow-hidden">
+          <img src="/img/logo.png" alt="Logo ZeroTier" class="w-full h-full object-cover">
+        </div>
+        <div>
+          <h1 class="font-bold text-slate-900 dark:text-slate-100 text-lg">ZeroDash Manage</h1>
+          <p class="text-xs text-cyan-600 dark:text-cyan-400 font-medium">RouterOS v7</p>
+        </div>
+      </div>
+      <button @click="isMobileMenuOpen = false" class="md:hidden text-slate-400 hover:text-slate-200"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+
+    <nav class="p-4 space-y-1.5">
+      <!-- Menu: Overview -->
+      <button @click="activeTab = 'overview'; localStorage.setItem('activeTab', 'overview'); isMobileMenuOpen = false" 
+              :class="activeTab === 'overview' ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30 font-bold shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent'" 
+              class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg border text-sm transition">
+        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+        <span>Overview</span>
+      </button>
+
+      <!-- Menu: Controller Networks -->
+      <button @click="activeTab = 'networks'; localStorage.setItem('activeTab', 'networks'); isMobileMenuOpen = false" 
+              :class="activeTab === 'networks' ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30 font-bold shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent'" 
+              class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg border text-sm transition">
+        <i data-lucide="globe" class="w-4 h-4"></i>
+        <span>Controller Networks</span>
+        <span class="ml-auto bg-slate-200 dark:bg-slate-800 text-cyan-600 dark:text-cyan-400 text-xs px-2 py-0.5 rounded-full" x-text="networks.length"></span>
+      </button>
+
+      <!-- Menu: Controller Members -->
+      <button @click="activeTab = 'members'; localStorage.setItem('activeTab', 'members'); isMobileMenuOpen = false" 
+              :class="activeTab === 'members' ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30 font-bold shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent'" 
+              class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg border text-sm transition">
+        <i data-lucide="users" class="w-4 h-4"></i>
+        <span>Controller Members</span>
+        <span class="ml-auto bg-slate-200 dark:bg-slate-800 text-cyan-600 dark:text-cyan-400 text-xs px-2 py-0.5 rounded-full" x-text="members.length"></span>
+      </button>
+
+      <!-- Menu: Controller Routes -->
+      <button @click="activeTab = 'routes'; localStorage.setItem('activeTab', 'routes'); isMobileMenuOpen = false" 
+              :class="activeTab === 'routes' ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30 font-bold shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent'" 
+              class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg border text-sm transition">
+        <i data-lucide="git-fork" class="w-4 h-4"></i>
+        <span>Controller Routes</span>
+        <span class="ml-auto bg-slate-200 dark:bg-slate-800 text-cyan-600 dark:text-cyan-400 text-xs px-2 py-0.5 rounded-full" x-text="parsedCurrentRoutes.length"></span>
+      </button>
+
+      <button @click="activeTab = 'remote-router'; localStorage.setItem('activeTab', 'remote-router'); isMobileMenuOpen = false" 
+              :class="activeTab === 'remote-router' ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30 font-bold shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent'" 
+              class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg border text-sm transition">
+        <i data-lucide="server-cog" class="w-4 h-4"></i>
+        <span>Remote Router Tool</span>
+      </button>
+
+      <!-- SEMBUNYIKAN MASTER ROUTER DARI READ-ONLY -->
+      <button x-show="window.USER_ROLE === 'admin'" 
+              @click="activeTab = 'master-router'; localStorage.setItem('activeTab', 'master-router'); isMobileMenuOpen = false" 
+              :class="activeTab === 'master-router' ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30 font-bold shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent'" 
+              class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg border text-sm transition">
+        <i data-lucide="square-asterisk" class="w-4 h-4"></i>
+        <span>Master Router</span>
+      </button>
+
+      <!-- SEMBUNYIKAN SETTINGS DARI READ-ONLY -->
+      <button x-show="window.USER_ROLE === 'admin'" 
+              @click="activeTab = 'settings'; localStorage.setItem('activeTab', 'settings'); isMobileMenuOpen = false" 
+              :class="activeTab === 'settings' ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30 font-bold shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent'" 
+              class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg border text-sm transition">
+        <i data-lucide="settings" class="w-4 h-4"></i>
+        <span>Settings</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- BAGIAN BAWAH SIDEBAR: PROFIL & LOGOUT -->
+  <div class="p-4 border-t border-slate-200 dark:border-slate-800">
+    <!-- Menu User Management (Khusus Admin) -->
+    <% if (currentUser && currentUser.role === 'admin') { %>
+      <button @click="activeTab = 'users'; localStorage.setItem('activeTab', 'users'); isMobileMenuOpen = false" 
+              :class="activeTab === 'users' ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-bold border border-cyan-500/20' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'" 
+              class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm transition mb-3">
+        <i data-lucide="folder-user" class="w-4 h-4"></i>
+        <span>Manajemen Akun</span>
+      </button>
+    <% } %>
+
+    <!-- Profil Pengguna & Logout -->
+    <% if (currentUser) { %>
+    <div class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3 overflow-hidden">
+        <div class="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center flex-shrink-0 text-white font-bold text-xs uppercase">
+          <%= currentUser.username.charAt(0) %>
+        </div>
+        <div class="truncate">
+          <p class="text-xs font-bold text-slate-900 dark:text-slate-100 truncate"><%= currentUser.username %></p>
+          <p class="text-[10px] text-cyan-600 dark:text-cyan-400 uppercase font-bold tracking-wider"><%= currentUser.role %></p>
+        </div>
+      </div>
+      <a href="/logout" class="p-1.5 text-rose-500 hover:bg-rose-500/10 rounded-lg transition" title="Logout">
+        <i data-lucide="log-out" class="w-4 h-4"></i>
+      </a>
+    </div>
+    <% } %>
+  </div>
+</aside>

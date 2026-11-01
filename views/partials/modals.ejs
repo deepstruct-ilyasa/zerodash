@@ -1,0 +1,251 @@
+<!-- MODAL: ADD CONTROLLER NETWORK -->
+<div x-show="showAddNetModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" x-cloak>
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+    <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Tambah Controller Network Baru</h3>
+    <div>
+      <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Controller Name</label>
+      <input type="text" x-model="newNet.name" placeholder="Name_Controller" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200">
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Instance</label>
+        <select x-model="newNet.instance" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200 font-mono">
+          <option value="">-- Pilih Instance --</option>
+          <template x-for="inst in instances" :key="inst['.id'] || inst.name">
+            <option :value="inst.name" x-text="inst.name"></option>
+          </template>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">MTU Size</label>
+        <input type="text" x-model="newNet.mtu" placeholder="2800" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200 font-mono">
+      </div>
+    </div>
+    <div>
+      <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">IP Range</label>
+      <input type="text" x-model="newNet['ip-range']" placeholder="10.10.10.1-10.10.10.30" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200 font-mono">
+    </div>
+    <div>
+      <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Network Type</label>
+      <select x-model="newNet.private" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200">
+        <option :value="true">PRIVATE</option>
+        <option :value="false">PUBLIC</option>
+      </select>
+    </div>
+    <div class="flex items-center justify-end space-x-3 pt-2">
+      <button @click="showAddNetModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold">Batal</button>
+      <button @click="submitAddNetwork()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold">Simpan Network</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDIT CONTROLLER NETWORK -->
+<div x-show="showEditNetModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" x-cloak>
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+    <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Edit Controller Network</h3>
+    <div>
+      <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Controller Name</label>
+      <input type="text" x-model="editNetData.name" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200">
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Instance</label>
+        <select x-model="editNetData.instance" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200 font-mono">
+          <template x-for="inst in instances" :key="inst['.id'] || inst.name">
+            <option :value="inst.name" x-text="inst.name"></option>
+          </template>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">MTU Size</label>
+        <input type="text" x-model="editNetData.mtu" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200 font-mono">
+      </div>
+    </div>
+    <div>
+      <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">IP Range</label>
+      <input type="text" x-model="editNetData['ip-range']" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200 font-mono">
+    </div>
+    <div>
+      <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Network Type</label>
+      <select x-model="editNetData.private" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200">
+        <option value="yes">PRIVATE</option>
+        <option value="no">PUBLIC</option>
+      </select>
+    </div>
+    <div class="flex items-center justify-between pt-2">
+      <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">Status</span>
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" x-model="editNetData.disabled" class="sr-only peer">
+        <div class="w-11 h-6 bg-emerald-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600"></div>
+        <span class="ml-3 text-xs font-semibold" :class="editNetData.disabled ? 'text-rose-500' : 'text-emerald-500'" x-text="editNetData.disabled ? 'DISABLED' : 'ACTIVE'"></span>
+      </label>
+    </div>
+    <div class="flex items-center justify-end space-x-3 pt-2">
+      <button @click="showEditNetModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold">Batal</button>
+      <button @click="submitEditNetwork()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold">Update Network</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DELETE CONFIRMATION NETWORK -->
+<div x-show="showDeleteNetModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" x-cloak>
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-sm w-full p-6 space-y-4 shadow-2xl text-center">
+    <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Hapus Controller Network?</h3>
+    <p class="text-xs text-slate-400">Yakin ingin menghapus network controller ini?</p>
+    <div class="flex items-center justify-center space-x-3 pt-2">
+      <button @click="showDeleteNetModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold">Batal</button>
+      <button @click="confirmDeleteNetwork()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-semibold">Ya, Hapus</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADD MEMBER -->
+<div x-show="showAddMemberModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" x-cloak>
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+    <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Tambah Controller Member</h3>
+    <div>
+      <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Controller Network</label>
+      <select x-model="newMember.network" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200 font-mono">
+        <option value="">-- Pilih Network --</option>
+        <template x-for="n in networks" :key="n.name || n.network">
+          <option :value="n.name || n.network" x-text="n.name || n.network"></option>
+        </template>
+      </select>
+    </div>
+    <div>
+      <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">ZT Address ID</label>
+      <input type="text" x-model="newMember['zt-address']" placeholder="xxxxxxxxxx" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200 font-mono">
+    </div>
+    <div>
+      <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Nama Member</label>
+      <input type="text" x-model="newMember.name" placeholder="Name-Router" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200">
+    </div>
+    <div>
+      <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Virtual IP Address</label>
+      <input type="text" x-model="newMember['ip-address']" placeholder="10.10.10.5" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200 font-mono">
+    </div>
+    <div class="flex items-center space-x-2 pt-1">
+      <input type="checkbox" id="addAuth" x-model="newMember.authorized" class="rounded text-cyan-600 focus:ring-cyan-500">
+      <label for="addAuth" class="text-xs text-slate-700 dark:text-slate-300 font-medium">Otorisasi (Authorized)</label>
+    </div>
+    <div class="flex items-center justify-end space-x-3 pt-2">
+      <button @click="showAddMemberModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold">Batal</button>
+      <button @click="submitAddMember()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold">Simpan Member</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDIT MEMBER -->
+<div x-show="showEditMemberModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" x-cloak>
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+    <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Edit Controller Member</h3>
+    <div>
+      <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Nama Member</label>
+      <input type="text" x-model="editMemberData.name" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200">
+    </div>
+    <div>
+      <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Virtual IP Address</label>
+      <input type="text" x-model="editMemberData['ip-address']" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200 font-mono">
+    </div>
+    <div class="flex items-center justify-between pt-2">
+      <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">Status Authorized</span>
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" x-model="editMemberData.authorized" class="sr-only peer">
+        <div class="w-11 h-6 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600"></div>
+        <span class="ml-3 text-xs font-semibold" :class="editMemberData.authorized ? 'text-cyan-600 dark:text-cyan-400' : 'text-amber-500'" x-text="editMemberData.authorized ? 'AUTHORIZED' : 'UNAUTHORIZED'"></span>
+      </label>
+    </div>
+    <div class="flex items-center justify-end space-x-3 pt-2">
+      <button @click="showEditMemberModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold">Batal</button>
+      <button @click="submitEditMember()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold">Update Member</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DELETE CONFIRMATION MEMBER -->
+<div x-show="showDeleteMemberModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" x-cloak>
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-sm w-full p-6 space-y-4 shadow-2xl text-center">
+    <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Hapus Member Controller?</h3>
+    <p class="text-xs text-slate-400">Yakin ingin menghapus member ini dari controller?</p>
+    <div class="flex items-center justify-center space-x-3 pt-2">
+      <button @click="showDeleteMemberModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold">Batal</button>
+      <button @click="confirmDeleteMember()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-semibold">Ya, Hapus</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADD CONTROLLER ROUTE -->
+<div x-show="showAddRouteModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" x-cloak>
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+    <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Tambah Subnet Route Baru</h3>
+    <p class="text-xs text-slate-400">Tambahkan rute jaringan yang akan didorong secara otomatis ke seluruh member ZeroTier pada controller terpilih.</p>
+    
+    <div>
+      <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Destination Subnet (CIDR)</label>
+      <input type="text" x-model="newRoute.subnet" placeholder="192.168.50.0/24" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200 font-mono">
+    </div>
+
+    <div>
+      <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Gateway / Via IP Member (Dropdown)</label>
+      <select x-model="newRoute.gateway" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200 font-mono">
+        <option value="">-- Direct Access (Tanpa Gateway Khusus) --</option>
+        <template x-for="member in membersForSelectedController" :key="member['.id'] || member['zt-address']">
+          <option :value="member['ip-address']" x-text="`${member.name || 'Unnamed Member'} (${member['ip-address'] || 'No IP'})`"></option>
+        </template>
+      </select>
+      <span class="text-[10px] text-slate-400 mt-1 block">Pilih member terdaftar yang bertindak sebagai exit node/gateway untuk subnet tersebut.</span>
+    </div>
+
+    <div class="flex items-center justify-end space-x-3 pt-3">
+      <button @click="showAddRouteModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold">Batal</button>
+      <button @click="submitAddRoute()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold shadow">Simpan Route</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDIT CONTROLLER ROUTE -->
+<div x-show="showEditRouteModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" x-cloak>
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+    <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Edit Subnet Route</h3>
+    <p class="text-xs text-slate-400">Sesuaikan subnet tujuan atau ubah gateway member untuk rute ini.</p>
+    
+    <div>
+      <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Destination Subnet (CIDR)</label>
+      <input type="text" x-model="editRouteData.subnet" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200 font-mono">
+    </div>
+
+    <div>
+      <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Gateway / Via IP Member (Dropdown)</label>
+      <select x-model="editRouteData.gateway" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-200 font-mono">
+        <option value="">-- Direct Access (Tanpa Gateway Khusus) --</option>
+        <template x-for="member in membersForSelectedController" :key="member['.id'] || member['zt-address']">
+          <option :value="member['ip-address']" x-text="`${member.name || 'Unnamed Member'} (${member['ip-address'] || 'No IP'})`"></option>
+        </template>
+      </select>
+    </div>
+
+    <div class="flex items-center justify-end space-x-3 pt-3">
+      <button @click="showEditRouteModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold">Batal</button>
+      <button @click="submitEditRoute()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold shadow">Update Route</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DELETE CONTROLLER ROUTE -->
+<div x-show="showDeleteRouteModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" x-cloak>
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-sm w-full p-6 space-y-4 shadow-2xl text-center">
+    <div class="w-12 h-12 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto border border-rose-500/20">
+      <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+    </div>
+    
+    <div>
+      <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Hapus Subnet Route?</h3>
+      <p class="text-xs text-slate-400 mt-1">Yakin ingin menghapus rute <span class="font-mono font-semibold text-rose-500" x-text="routeToDelete"></span> dari controller ini?</p>
+    </div>
+
+    <div class="flex items-center justify-center space-x-3 pt-2">
+      <button @click="showDeleteRouteModal = false; routeToDelete = null" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold">Batal</button>
+      <button @click="confirmDeleteRoute()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-semibold shadow">Ya, Hapus</button>
+    </div>
+  </div>
+</div>

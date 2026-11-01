@@ -1,0 +1,436 @@
+<div class="space-y-6" x-data="masterRouterApp()" x-init="fetchRouters()">
+  <!-- Header & Aksi Atas -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg flex items-center justify-center border border-indigo-500/20">
+        <i data-lucide="chevrons-left-right-ellipsis" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <h2 class="text-base font-bold text-slate-900 dark:text-slate-100">Master Data Router</h2>
+        <p class="text-xs text-slate-400">Kelola daftar kredensial router untuk kemudahan akses remote.</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-2 w-full sm:w-auto">
+      <div class="relative w-full sm:w-64">
+        <input type="text" x-model="searchQuery" placeholder="Cari router, IP, atau lokasi..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-cyan-500 transition">
+        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+      </div>
+      <button x-show="window.USER_ROLE === 'admin'" @click="openAddModal()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold shadow transition flex items-center space-x-2 shrink-0">
+        <i data-lucide="plus" class="w-4 h-4"></i>
+        <span class="hidden sm:inline">Tambah Router</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabel Data -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
+    <div class="overflow-x-auto min-h-[150px]">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 dark:bg-slate-950 text-slate-400 uppercase">
+          <tr>
+            <th class="p-3 rounded-l-lg">Nama</th>
+            <th class="p-3">Host / IP</th>
+            <th class="p-3 text-center">Protokol</th>
+            <th class="p-3 text-center">Port</th>
+            <th class="p-3">Username</th>
+            <th class="p-3">Deskripsi</th>
+            <th class="p-3 text-center rounded-r-lg">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          <template x-for="r in filteredRouters" :key="r.id">
+            <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition">
+              <td class="p-3 font-bold text-slate-800 dark:text-slate-200" x-text="r.name"></td>
+              <td class="p-3 font-mono text-cyan-600 dark:text-cyan-400 font-semibold" x-text="r.host"></td>
+              <td class="p-3 font-medium text-center text-slate-700 dark:text-slate-300" x-text="r.protocol"></td>
+              <td class="p-3 font-medium text-center text-slate-700 dark:text-slate-300" x-text="r.port"></td>
+              <td class="p-3 font-medium text-slate-700 dark:text-slate-300" x-text="r.username"></td>
+              <td class="p-3 text-slate-500 truncate max-w-[150px]" x-text="r.description || '-'"></td>
+              <td class="p-3">
+                <div class="flex items-center justify-center space-x-1.5">
+                  <!-- Tombol Test Koneksi Langsung -->
+                  <button @click="testDirectConnection(r)" class="p-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-500 rounded transition" title="Test Koneksi">
+                    <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                  </button>
+                  <!-- Tombol Edit -->
+                  <button x-show="window.USER_ROLE === 'admin'" @click="openEditModal(r)" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded transition" title="Edit">
+                    <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                  </button>
+                  <!-- Tombol Hapus -->
+                  <button x-show="window.USER_ROLE === 'admin'" @click="openDeleteModal(r)" class="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded transition" title="Hapus">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </template>
+          <template x-if="!isLoading && filteredRouters.length === 0">
+            <tr><td colspan="6" class="p-8 text-center text-slate-400">Data router tidak ditemukan.</td></tr>
+          </template>
+          <template x-if="isLoading">
+            <tr><td colspan="6" class="p-8 text-center text-slate-400 animate-pulse">Memuat data...</td></tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL ADD / EDIT MASTER ROUTER (Gaya File 2) -->
+  <!-- ========================================== -->
+  <div x-show="showModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" x-cloak style="display: none;">
+    <div @click.outside="showModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-xl shadow-xl space-y-4">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800">
+        <h4 class="text-sm font-bold text-slate-900 dark:text-slate-100" x-text="isEdit ? 'Edit Data Router' : 'Tambah Router Baru'"></h4>
+        <button @click="showModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Nama Router (Alias)</label>
+          <input type="text" x-model="form.name" placeholder="Misal: Router Core Klaten" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-800 dark:text-slate-200">
+        </div>
+        
+        <div>
+          <label class="block text-slate-400 mb-1">Host / IP Address</label>
+          <input type="text" x-model="form.host" placeholder="192.168.x.x / id.sn.mynetname.net" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-800 dark:text-slate-200 font-mono">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-slate-400 mb-1">Protokol</label>
+            <select x-model="form.protocol" @change="updateDefaultPort" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-800 dark:text-slate-200">
+              <option value="API">API (8728)</option>
+              <option value="API-SSL">API-SSL (8729)</option>
+              <option value="WWW">WWW (80)</option>
+              <option value="WWW-SSL">WWW-SSL (443)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Port</label>
+            <input type="number" x-model="form.port" placeholder="8728" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-800 dark:text-slate-200 font-mono">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Username</label>
+          <input type="text" x-model="form.username" placeholder="admin" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-800 dark:text-slate-200">
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Password</label>
+          <div class="relative">
+            <input :type="showPassword ? 'text' : 'password'" x-model="form.password" placeholder="********" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2 pr-9 text-slate-800 dark:text-slate-200">
+            <button type="button" @click="showPassword = !showPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200 transition">
+              <i :data-lucide="showPassword ? 'eye-off' : 'eye'" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Deskripsi / Lokasi (Opsional)</label>
+          <textarea x-model="form.description" rows="2" placeholder="Catatan lokasi atau detail tambahan router..." class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-800 dark:text-slate-200 resize-none"></textarea>
+        </div>
+
+        <!-- TOMBOL AKSI & TEST KONEKSI -->
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-2 pt-4">
+          <button type="button" @click="testConnection()" :disabled="isTesting" class="w-full sm:w-auto px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-lg text-xs font-semibold transition flex items-center justify-center space-x-2 disabled:opacity-50">
+            <i data-lucide="zap" class="w-4 h-4"></i>
+            <span x-text="isTesting ? 'Menguji...' : 'Test Koneksi'"></span>
+          </button>
+
+          <div class="flex space-x-2 w-full sm:w-auto justify-end">
+            <button type="button" @click="showModal = false" class="px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg">Batal</button>
+            <button type="button" @click="saveRouter()" :disabled="isSaving" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-semibold flex items-center space-x-2 disabled:opacity-50">
+              <template x-if="isSaving">
+                <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>
+              </template>
+              <span x-text="isSaving ? 'Menyimpan...' : 'Simpan Data'"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL POPUP HASIL TEST KONEKSI             -->
+  <!-- ========================================== -->
+  <div x-show="showTestModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4" x-cloak style="display: none;">
+    <div @click.outside.stop="showTestModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-sm shadow-xl text-center space-y-4">
+      <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full" :class="testStatus === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-500'">
+        <i :data-lucide="testStatus === 'success' ? 'check-circle' : 'x-circle'" class="w-8 h-8"></i>
+      </div>
+      <div>
+        <h4 class="text-sm font-bold text-slate-900 dark:text-slate-100 mb-1" x-text="testStatus === 'success' ? 'Koneksi Berhasil!' : 'Koneksi Gagal'"></h4>
+        <p class="text-xs text-slate-400" x-text="testMessage"></p>
+      </div>
+      <!-- Tombol Tutup dengan .stop agar modal utama tidak ikut tertutup -->
+      <button type="button" @click.stop="showTestModal = false" class="w-full px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs rounded-lg font-medium transition">
+        Tutup
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL DELETE KONFIRMASI                    -->
+  <!-- ========================================== -->
+  <div x-show="showDeleteModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" x-cloak style="display: none;">
+    <div @click.outside="showDeleteModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-sm shadow-xl text-center space-y-4">
+      <div class="w-12 h-12 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto">
+        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h4 class="text-sm font-bold text-slate-900 dark:text-slate-100 mb-1">Hapus Router?</h4>
+        <p class="text-xs text-slate-400">Apakah Anda yakin ingin menghapus data <span class="text-slate-200 font-mono font-semibold" x-text="deleteTargetName"></span>? Tindakan ini tidak dapat dibatalkan.</p>
+      </div>
+      <div class="flex space-x-2 justify-center">
+        <button type="button" @click="showDeleteModal = false" class="px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs rounded-lg font-medium">Batal</button>
+        <button type="button" @click="confirmDelete()" :disabled="isSaving" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs rounded-lg font-semibold transition">
+          <span x-text="isSaving ? 'Menghapus...' : 'Ya, Hapus'"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div x-show="showToast" 
+       class="fixed bottom-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg border text-sm font-semibold flex items-center space-x-3 transition-all"
+       :class="toastType === 'success' ? 'bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-950 border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400'"
+       x-transition:enter="transform ease-out duration-300 transition"
+       x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+       x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
+       x-transition:leave="transition ease-in duration-100"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0"
+       style="display: none;">
+    <i :data-lucide="toastType === 'success' ? 'check-circle' : 'alert-circle'" class="w-5 h-5"></i>
+    <span x-text="toastMessage"></span>
+  </div>
+</div>
+
+<script>
+  function masterRouterApp() {
+    return {
+      routers: [],
+      searchQuery: '',
+      isLoading: true,
+      isSaving: false,
+      isTesting: false,
+      
+      // Modal States
+      showModal: false,
+      showDeleteModal: false,
+      isEdit: false,
+      showPassword: false,
+      
+      // Modal Test Koneksi Result
+      showTestModal: false,
+      testStatus: 'success',
+      testMessage: '',
+
+      // Form Models
+      form: { id: '', name: '', host: '', protocol: 'API', port: 8728, username: '', password: '', description: '' },
+      deleteId: null,
+      deleteTargetName: '',
+
+      // Toast States
+      showToast: false,
+      toastMessage: '',
+      toastType: 'success',
+
+      triggerToast(message, type = 'success') {
+        this.toastMessage = message;
+        this.toastType = type;
+        this.showToast = true;
+        setTimeout(() => { this.showToast = false; }, 3000);
+      },
+
+      updateDefaultPort() {
+        if (this.form.protocol === 'API') this.form.port = 8728;
+        else if (this.form.protocol === 'API-SSL') this.form.port = 8729;
+        else if (this.form.protocol === 'WWW') this.form.port = 80;
+        else if (this.form.protocol === 'WWW-SSL') this.form.port = 443;
+      },
+
+      get filteredRouters() {
+        if (this.searchQuery === '') return this.routers;
+        const q = this.searchQuery.toLowerCase();
+        return this.routers.filter(r => 
+          (r.name && r.name.toLowerCase().includes(q)) || 
+          (r.host && r.host.toLowerCase().includes(q)) ||
+          (r.description && r.description.toLowerCase().includes(q))
+        );
+      },
+
+      async fetchRouters() {
+        this.isLoading = true;
+        try {
+          const res = await fetch('/api/master-routers');
+          const data = await res.json();
+          if (data.success) {
+            this.routers = data.data;
+          } else {
+            this.triggerToast('Gagal memuat data router', 'error');
+          }
+        } catch (err) {
+          this.triggerToast('Terjadi kesalahan koneksi db', 'error');
+        } finally {
+          this.isLoading = false;
+          setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
+        }
+      },
+
+      // Fungsi Test Koneksi Langsung dari Baris Tabel
+      async testDirectConnection(router) {
+        this.triggerToast(`Menguji koneksi ke ${router.name} (${router.host})...`, 'success');
+        
+        try {
+          const response = await fetch('/api/remote/fetch-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              host: router.host,
+              protocol: router.protocol || 'API',
+              port: router.port || 8728,
+              username: router.username,
+              password: router.password
+            })
+          });
+          const res = await response.json();
+          
+          if (res.success) {
+            this.testStatus = 'success';
+            this.testMessage = `Koneksi langsung berhasil terjalin ke ${router.host} (${router.name}). Router aktif dan kredensial valid.`;
+          } else {
+            this.testStatus = 'error';
+            this.testMessage = `Gagal terhubung ke ${router.name}: ` + res.message;
+          }
+        } catch (err) {
+          this.testStatus = 'error';
+          this.testMessage = `Jaringan terputus atau router ${router.name} (${router.host}) tidak dapat dijangkau.`;
+        } finally {
+          this.showTestModal = true;
+          setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
+        }
+      },
+
+      openAddModal() {
+        this.isEdit = false;
+        this.form = { id: '', name: '', host: '', protocol: 'API', port: 8728, username: '', password: '', description: '' };
+        this.showPassword = false;
+        this.showModal = true;
+        setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
+      },
+
+      openEditModal(router) {
+        this.isEdit = true;
+        this.form = { ...router };
+        this.showPassword = false;
+        this.showModal = true;
+        setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
+      },
+
+      async testConnection() {
+        if (!this.form.host || !this.form.username || !this.form.password) {
+          this.triggerToast('Host, Username, dan Password wajib diisi sebelum di test!', 'error');
+          return;
+        }
+
+        this.isTesting = true;
+        
+        try {
+          const response = await fetch('/api/remote/fetch-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              host: this.form.host,
+              protocol: this.form.protocol,
+              port: this.form.port,
+              username: this.form.username,
+              password: this.form.password
+            })
+          });
+          const res = await response.json();
+          
+          if (res.success) {
+            this.testStatus = 'success';
+            this.testMessage = `Koneksi berhasil terjalin ke ${this.form.host}. Kredensial dipastikan valid.`;
+          } else {
+            this.testStatus = 'error';
+            this.testMessage = 'Gagal terhubung: ' + res.message;
+          }
+        } catch (err) {
+          this.testStatus = 'error';
+          this.testMessage = 'Jaringan terputus atau router / host tidak dapat dijangkau.';
+        } finally {
+          this.isTesting = false;
+          this.showTestModal = true;
+          setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
+        }
+      },
+
+      async saveRouter() {
+        if (!this.form.name || !this.form.host || !this.form.username || !this.form.password) {
+          this.triggerToast('Nama, Host, Username, dan Password wajib diisi!', 'error');
+          return;
+        }
+
+        this.isSaving = true;
+        const endpoint = this.isEdit ? '/api/master-routers/update' : '/api/master-routers/add';
+        
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.form)
+          });
+          const result = await response.json();
+          
+          if (result.success) {
+            this.showModal = false;
+            this.triggerToast(result.message, 'success');
+            this.fetchRouters();
+          } else {
+            this.triggerToast(result.message, 'error');
+          }
+        } catch (err) {
+          this.triggerToast('Gagal menyimpan data.', 'error');
+        } finally {
+          this.isSaving = false;
+        }
+      },
+
+      openDeleteModal(router) {
+        this.deleteId = router.id;
+        this.deleteTargetName = router.name;
+        this.showDeleteModal = true;
+        setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
+      },
+
+      async confirmDelete() {
+        this.isSaving = true;
+        try {
+          const response = await fetch('/api/master-routers/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: this.deleteId })
+          });
+          const result = await response.json();
+          
+          if (result.success) {
+            this.showDeleteModal = false;
+            this.triggerToast(result.message, 'success');
+            this.fetchRouters();
+          } else {
+            this.triggerToast(result.message, 'error');
+          }
+        } catch (err) {
+          this.triggerToast('Gagal menghapus data.', 'error');
+        } finally {
+          this.isSaving = false;
+        }
+      }
+    };
+  }
+</script>

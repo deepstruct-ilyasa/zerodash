@@ -1,0 +1,63 @@
+<div x-show="activeTab === 'networks'" class="space-y-6">
+  <!-- Tabel Utama Controller Networks -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+    <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+      <div>
+        <h3 class="text-sm font-bold text-slate-900 dark:text-slate-200">ZeroTier Controller Networks</h3>
+        <p class="text-xs text-slate-400">Konfigurasi utama jaringan ZeroTier Controller yang di-host di router MikroTik.</p>
+      </div>
+      <div class="flex items-center space-x-3" x-show="window.USER_ROLE === 'admin'">
+        <button @click="openAddNetModal()" class="px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold shadow flex items-center space-x-1.5 transition">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span>Tambah Controller</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs min-w-[1100px]">
+        <thead class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 uppercase font-semibold">
+          <tr>
+            <th class="p-3.5">Controller Name</th>
+            <th class="p-3.5">Network ID</th>
+            <th class="p-3.5">Instance</th>
+            <th class="p-3.5">MTU</th>
+            <th class="p-3.5">IP Range</th>
+            <th class="p-3.5">Visibility</th>
+            <th class="p-3.5">Status</th>
+            <th class="p-3.5 text-center" x-show="window.USER_ROLE === 'admin'">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+          <template x-for="net in networks" :key="net['.id'] || net.network">
+            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+              <td class="p-3.5 font-bold text-slate-900 dark:text-slate-100" x-text="net.name || 'ZT Controller'"></td>
+              <td class="p-3.5 font-mono font-bold text-cyan-600 dark:text-cyan-400" x-text="net.network || net['network-id'] || '-' "></td>
+              <td class="p-3.5 font-mono text-slate-400" x-text="net.instance || 'zt1'"></td>
+              <td class="p-3.5 font-mono" x-text="net.mtu || '2800'"></td>
+              <td class="p-3.5 font-mono text-emerald-600 dark:text-emerald-400 font-semibold" x-text="net['ip-range'] || '-' "></td>
+              <td class="p-3.5">
+                <span class="px-2 py-0.5 rounded text-[10px] font-semibold border" 
+                      :class="(net.private === 'yes' || net.private === true || net.private === 'YES' || net.private === 'true') ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'" 
+                      x-text="(net.private === 'yes' || net.private === true || net.private === 'YES' || net.private === 'true') ? 'PRIVATE' : 'PUBLIC'"></span>
+              </td>
+              <td class="p-3.5">
+                <span :class="parseBool(net.disabled) ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'" class="px-2 py-0.5 rounded text-[11px] font-semibold border" x-text="parseBool(net.disabled) ? 'DISABLED' : 'ACTIVE'"></span>
+              </td>
+              <td class="p-3.5 text-center" x-show="window.USER_ROLE === 'admin'">
+                <div class="flex items-center justify-center space-x-1.5">
+                  <button @click="openEditNetModal(net)" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 transition" title="Edit">
+                    <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                  </button>
+                  <button @click="openDeleteNetModal(net)" class="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded border border-rose-500/30 transition" title="Hapus">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

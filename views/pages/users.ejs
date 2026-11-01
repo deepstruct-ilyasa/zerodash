@@ -1,0 +1,156 @@
+<div class="space-y-6" x-data="userManagementApp()">
+  <div class="flex justify-between items-center">
+    <div>
+      <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100">Manajemen Akun Pengguna</h3>
+      <p class="text-sm text-slate-500">Kelola akses administrator dan akun read-only.</p>
+    </div>
+    <button @click="showAddModal = true" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-lg shadow flex items-center space-x-2 text-sm transition">
+      <i data-lucide="user-plus" class="w-4 h-4"></i>
+      <span>Tambah Akun</span>
+    </button>
+  </div>
+
+  <!-- Tabel Users -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-slate-50 dark:bg-slate-950 text-slate-500 text-xs uppercase font-semibold border-b border-slate-200 dark:border-slate-800">
+        <tr>
+          <th class="p-4">Username</th>
+          <th class="p-4">Role Akses</th>
+          <th class="p-4">Tanggal Dibuat</th>
+          <th class="p-4 text-center">Aksi</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+        <template x-for="user in users" :key="user.id">
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+            <td class="p-4 font-bold text-slate-800 dark:text-slate-200" x-text="user.username"></td>
+            <td class="p-4">
+              <span class="px-2.5 py-1 rounded text-xs font-bold uppercase" 
+                    :class="user.role === 'admin' ? 'bg-cyan-500/10 text-cyan-600 border border-cyan-500/20' : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'"
+                    x-text="user.role"></span>
+            </td>
+            <td class="p-4 font-mono text-xs text-slate-500" x-text="user.created_at"></td>
+            <td class="p-4 text-center space-x-2">
+                <button @click="openEdit(user)" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 transition" title="Edit">
+                    <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                </button>
+                <button @click="deleteUser(user.id)" class="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded border border-rose-500/30 transition" title="Hapus">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+            </td>
+          </tr>
+        </template>
+        <!-- Tampilan loading jika data kosong -->
+        <template x-if="users.length === 0">
+          <tr>
+            <td colspan="4" class="p-8 text-center text-slate-400 italic">Memuat data pengguna...</td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal Tambah / Edit (Digabung) -->
+  <div x-show="showAddModal || showEditModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" style="display:none;" x-transition>
+    <div class="bg-white dark:bg-slate-900 border border-slate-800 rounded-xl p-6 w-full max-w-sm shadow-xl" @click.outside="closeModals()">
+      <h3 class="text-lg font-bold text-slate-100 mb-4" x-text="showEditModal ? 'Edit Akun' : 'Tambah Akun Baru'"></h3>
+      <form @submit.prevent="saveUser()" class="space-y-4 text-sm">
+        <div>
+          <label class="block text-slate-400 mb-1">Username</label>
+          <input type="text" x-model="form.username" required class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1" x-text="showEditModal ? 'Password Baru (Kosongkan jika tidak diubah)' : 'Password'"></label>
+          <input type="password" x-model="form.password" :required="!showEditModal" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Role Akses</label>
+          <select x-model="form.role" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500">
+            <option value="read_only">Read-Only (Hanya Melihat)</option>
+            <option value="admin">Administrator (Akses Penuh)</option>
+          </select>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" @click="closeModals()" class="px-4 py-2 text-slate-400 hover:text-slate-200">Batal</button>
+          <button type="submit" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-semibold shadow">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function userManagementApp() {
+  return {
+    users: [],
+    showAddModal: false,
+    showEditModal: false,
+    form: { id: '', username: '', password: '', role: 'read_only' },
+
+    init() {
+      this.loadUsers();
+    },
+
+    async loadUsers() {
+      try {
+        const res = await fetch('/api/users');
+        const json = await res.json();
+        if (json.success) this.users = json.data;
+      } catch (err) {
+        console.error('Gagal meload user:', err);
+      }
+    },
+
+    closeModals() {
+      this.showAddModal = false;
+      this.showEditModal = false;
+      this.form = { id: '', username: '', password: '', role: 'read_only' };
+    },
+
+    openEdit(user) {
+      this.form = { id: user.id, username: user.username, password: '', role: user.role };
+      this.showEditModal = true;
+    },
+
+    async saveUser() {
+      const isEdit = this.showEditModal;
+      const url = isEdit ? `/api/users/${this.form.id}` : '/api/users';
+      const method = isEdit ? 'PATCH' : 'POST';
+
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(this.form)
+        });
+        const json = await res.json();
+        
+        if (json.success) {
+          this.closeModals();
+          this.loadUsers();
+        } else {
+          alert('Gagal: ' + json.message);
+        }
+      } catch (err) {
+        alert('Terjadi kesalahan koneksi.');
+      }
+    },
+
+    async deleteUser(id) {
+      if (!confirm('Yakin ingin menghapus akun ini?')) return;
+      try {
+        const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+        const json = await res.json();
+        if (json.success) {
+          this.loadUsers();
+        } else {
+          alert('Gagal: ' + json.message);
+        }
+      } catch (err) {
+        alert('Terjadi kesalahan koneksi.');
+      }
+    }
+  }
+}
+</script>

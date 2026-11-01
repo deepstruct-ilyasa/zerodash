@@ -1,0 +1,89 @@
+<div x-show="activeTab === 'routes'" class="space-y-6" x-cloak>
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h3 class="text-sm font-bold text-slate-900 dark:text-slate-200">Controller Routes Management</h3>
+      <p class="text-xs text-slate-400">Pilih controller network untuk mengelola rute jaringan yang didorong ke member.</p>
+    </div>
+    
+    <!-- Dropdown Pilih Controller -->
+    <div class="flex items-center space-x-3">
+      <div class="w-72">
+        <label class="text-[10px] text-slate-400 block mb-1 uppercase font-semibold">Pilih Controller Network:</label>
+        <select x-model="selectedControllerId" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs text-slate-800 dark:text-slate-200 font-mono">
+          <option value="">-- Pilih Controller --</option>
+          <template x-for="net in networks" :key="net['.id'] || net.network">
+            <option :value="net['.id']" x-text="`${net.name} (${net.network || net['network-id']})`"></option>
+          </template>
+        </select>
+      </div>
+
+      <!-- Dibungkus div agar tooltip title muncul saat di-hover meskipun tombol ter-disable -->
+      <div class="mt-4" x-show="window.USER_ROLE === 'admin'" :title="!selectedControllerId ? 'Silakan pilih controller network terlebih dahulu!!!' : ''">
+        <button @click="showAddRouteModal = true" 
+                :disabled="!selectedControllerId" 
+                class="px-3.5 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-xs font-semibold shadow flex items-center space-x-1.5 transition">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span>Tambah Route</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabel Routes dari Controller yang Dipilih -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+    <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+      <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Daftar Routes</h4>
+      <span class="text-xs font-mono bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 px-2.5 py-1 rounded border border-cyan-500/20" x-text="`Total Routes: ${parsedCurrentRoutes.length}`"></span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 uppercase font-semibold">
+          <tr>
+            <th class="p-3.5">Destination Subnet</th>
+            <th class="p-3.5">Subnet Gateway</th>
+            <th class="p-3.5">Via Member</th>
+            <th class="p-3.5 text-center" x-show="window.USER_ROLE === 'admin'">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+          <template x-for="route in parsedCurrentRoutes" :key="route.raw">
+            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition" x-init="$nextTick(() => { if (window.lucide) window.lucide.createIcons(); })">
+              <!-- Kolom Destination Subnet -->
+              <td class="p-3.5 font-mono font-bold text-cyan-600 dark:text-cyan-400" x-text="route.subnet"></td>
+              
+              <!-- Kolom Gateway -->
+              <td class="p-3.5 font-mono text-emerald-600 dark:text-emerald-400 font-semibold" x-text="route.gateway || 'Default (Direct)'"></td>
+              
+              <!-- Kolom Baru: Via Member -->
+              <td class="p-3.5">
+                  <span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold text-[11px]" 
+                        x-text="route.viaMember">
+                  </span>
+              </td>
+
+              <!-- Kolom Aksi -->
+              <td class="p-3.5 text-center space-x-1.5" x-show="window.USER_ROLE === 'admin'">
+                <button @click="openEditRouteModal(route)" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 transition" title="Edit">
+                  <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                </button>
+                <button @click="deleteRoute(route.raw)" class="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded border border-rose-500/30 transition" title="Hapus">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </td>
+            </tr>
+          </template>
+          <template x-if="!selectedControllerId">
+            <tr>
+              <td colspan="4" class="p-8 text-center text-slate-400 italic">Silakan pilih controller network terlebih dahulu di bagian atas.</td>
+            </tr>
+          </template>
+          <template x-if="selectedControllerId && parsedCurrentRoutes.length === 0">
+            <tr>
+              <td colspan="4" class="p-8 text-center text-slate-400 italic">Tidak ada route management yang dikonfigurasi pada controller ini.</td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,964 @@
+<div class="space-y-6" x-data="remoteRouterApp()" x-init="fetchMasterRouters()">
+  <!-- Header & Form Kredensial -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
+    <div class="flex items-center space-x-3 mb-4">
+      <div class="w-10 h-10 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 rounded-lg flex items-center justify-center border border-cyan-500/20">
+        <i data-lucide="server-cog" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <h2 class="text-base font-bold text-slate-900 dark:text-slate-100">Remote Router Tool</h2>
+        <p class="text-xs text-slate-400">Kelola router lain secara mandiri dan terisolasi tanpa mengubah konfigurasi dashboard utama.</p>
+      </div>
+    </div>
+
+    <!-- Dropdown Pilih dari Master Router -->
+    <div class="mb-4" x-show="window.USER_ROLE === 'admin'">
+      <label class="text-[10px] text-slate-400 block mb-1 uppercase font-semibold">Pilih dari Master Router:</label>
+      <select @change="loadRouterPreset($event.target.value)" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs text-slate-800 dark:text-slate-200 font-medium">
+        <option value="">-- Pilih Router Tersimpan (Opsional) --</option>
+        <template x-for="r in masterRouters" :key="r.id">
+          <option :value="r.id" x-text="r.name + ' (' + r.host + ')'"></option>
+        </template>
+      </select>
+    </div>
+
+    <!-- Grid Form Kredensial -->
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 pt-2">
+      <div>
+        <label class="text-[10px] text-slate-400 block mb-1 uppercase font-semibold">Host / IP:</label>
+        <input type="text" x-model="form.host" placeholder="192.168.x.x" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-mono text-slate-800 dark:text-slate-200">
+      </div>
+      <div>
+        <label class="text-[10px] text-slate-400 block mb-1 uppercase font-semibold">Protokol:</label>
+        <select x-model="form.protocol" @change="updateDefaultPort" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs text-slate-800 dark:text-slate-200">
+          <option value="API">API (8728)</option>
+          <option value="API-SSL">API-SSL (8729)</option>
+          <option value="WWW">WWW (80)</option>
+          <option value="WWW-SSL">WWW-SSL (443)</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-[10px] text-slate-400 block mb-1 uppercase font-semibold">Port:</label>
+        <input type="number" x-model="form.port" placeholder="8728" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-mono text-slate-800 dark:text-slate-200">
+      </div>
+      <div>
+        <label class="text-[10px] text-slate-400 block mb-1 uppercase font-semibold">Username:</label>
+        <input type="text" x-model="form.username" placeholder="username" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs text-slate-800 dark:text-slate-200">
+      </div>
+      <div x-data="{ showPassword: false }">
+        <label class="text-[10px] text-slate-400 block mb-1 uppercase font-semibold">Password:</label>
+        <div class="relative">
+          <input :type="showPassword ? 'text' : 'password'" 
+                 x-model="form.password" 
+                 placeholder="********" 
+                 class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 pr-8 text-xs text-slate-800 dark:text-slate-200">
+          
+          <!-- Tombol Ikon Mata -->
+          <button type="button" 
+                  @click="showPassword = !showPassword" 
+                  class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-200 transition">
+            <i :data-lucide="showPassword ? 'eye-off' : 'eye'" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status & Tombol Konek -->
+    <div class="mt-4 flex items-center justify-between">
+      <span class="text-xs font-medium" :class="connected ? 'text-emerald-500' : 'text-slate-400'" x-text="statusText"></span>
+      <button @click="connectAndFetch()" :disabled="loading" class="px-6 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow transition flex items-center space-x-2">
+        <i data-lucide="plug" class="w-4 h-4"></i>
+        <span x-text="loading ? 'Menghubungkan...' : 'Hubungkan'"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 1. Section Zerotier Interfaces -->
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 md:p-6 shadow-sm space-y-4">
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+    <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
+      <i data-lucide="globe" class="w-4 h-4 text-cyan-500"></i>
+      <span>Zerotier Interfaces</span>
+    </h3>
+    <button x-show="window.USER_ROLE === 'admin'" @click="openAddModal()" class="w-full sm:w-auto px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg flex items-center justify-center space-x-1 transition shadow">
+      <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+      <span>Tambah Interface</span>
+    </button>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- TAMPILAN MOBILE: CARD VIEW (Sangat Rapi di HP) -->
+  <!-- ========================================== -->
+  <div class="block md:hidden space-y-3">
+    <template x-for="net in resultData.networks" :key="net['.id'] || net.name">
+      <div class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-3 shadow-sm">
+        <!-- Header Kartu: Nama & Status -->
+        <div class="flex justify-between items-start">
+          <div>
+            <span class="text-xs font-bold text-slate-900 dark:text-slate-100 block text-base" x-text="net.name"></span>
+            <span class="text-[11px] font-mono text-cyan-600 dark:text-cyan-400 block" x-text="net.network"></span>
+          </div>
+          <!-- Status Badge -->
+          <span class="px-2 py-0.5 rounded text-[10px] font-semibold border inline-flex items-center space-x-1"
+                :class="(net.disabled === 'true' || net.disabled === true || net.disabled === 'yes') ? 'bg-slate-500/10 text-slate-400 border-slate-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'">
+            <span class="w-1.5 h-1.5 rounded-full" :class="(net.disabled === 'true' || net.disabled === true || net.disabled === 'yes') ? 'bg-slate-400' : 'bg-emerald-500 animate-pulse'"></span>
+            <span x-text="((net.disabled === 'true' || net.disabled === true || net.disabled === 'yes') ? 'Disabled' : 'Enabled') + ' | ' + (net.status || '-')"></span>
+          </span>
+        </div>
+
+        <!-- Detail Informasi Ringkas -->
+        <div class="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-slate-200 dark:border-slate-800/80">
+          <div>
+            <span class="text-slate-400 block">Instance:</span>
+            <span class="font-mono font-medium text-slate-700 dark:text-slate-300" x-text="net.instance || '-'"></span>
+          </div>
+          <div>
+            <span class="text-slate-400 block">MTU:</span>
+            <span class="font-mono font-medium text-slate-700 dark:text-slate-300" x-text="net.mtu || '-'"></span>
+          </div>
+          <div class="col-span-2">
+            <span class="text-slate-400 block">Network Name:</span>
+            <span class="font-medium text-slate-700 dark:text-slate-300" x-text="net['network-name'] || '-'"></span>
+          </div>
+        </div>
+
+        <!-- Allow Config Flags Badges -->
+        <div class="flex flex-wrap gap-1 pt-1">
+          <span class="px-1.5 py-0.5 rounded border text-[10px] font-medium"
+                :class="(net['allow-managed'] === true || net['allow-managed'] === 'yes' || net['allow-managed'] === 'true' || net['allow-managed'] === 1) ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20'">
+            Managed
+          </span>
+          <span class="px-1.5 py-0.5 rounded border text-[10px] font-medium"
+                :class="(net['allow-global'] === true || net['allow-global'] === 'yes' || net['allow-global'] === 'true' || net['allow-global'] === 1) ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20'">
+            Global
+          </span>
+          <span class="px-1.5 py-0.5 rounded border text-[10px] font-medium"
+                :class="(net['allow-default'] === true || net['allow-default'] === 'yes' || net['allow-default'] === 'true' || net['allow-default'] === 1) ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20'">
+            Default
+          </span>
+        </div>
+
+        <!-- Tombol Aksi Mobile -->
+        <div x-show="window.USER_ROLE === 'admin'" class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-200 dark:border-slate-800/80">
+          <button @click="openEditModal(net)" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 transition flex items-center space-x-1 text-xs font-medium">
+            <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+            <span>Edit</span>
+          </button>
+          <button @click="deleteInterface(net)" class="px-3 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded border border-rose-500/30 transition flex items-center space-x-1 text-xs font-medium">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            <span>Hapus</span>
+          </button>
+        </div>
+      </div>
+    </template>
+    
+    <!-- Pesan Kosong Mobile -->
+    <template x-if="resultData.networks.length === 0">
+      <div class="p-6 text-center text-slate-400 text-xs bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+        Belum ada data Zerotier Interface.
+      </div>
+    </template>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- TAMPILAN DESKTOP: TABLE VIEW (Muncul di layar MD ke atas) -->
+  <!-- ========================================== -->
+  <div class="hidden md:block overflow-x-auto min-h-[80px]">
+    <table class="w-full text-left text-xs">
+      <thead class="bg-slate-50 dark:bg-slate-950 text-slate-400 uppercase">
+        <tr>
+          <th class="p-3 rounded-l-lg">Name</th>
+          <th class="p-3">Status</th>
+          <th class="p-3">Instance</th>
+          <th class="p-3">MAC Address</th>
+          <th class="p-3">Network ID</th>
+          <th class="p-3">Network Name</th>
+          <th class="p-3">MTU</th>
+          <th class="p-3">Allow Config</th>
+          <th class="p-3 text-center rounded-r-lg" x-show="window.USER_ROLE === 'admin'">Aksi</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        <template x-for="net in resultData.networks" :key="net['.id'] || net.name">
+          <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition">
+            <td class="p-3 font-semibold text-slate-800 dark:text-slate-200" x-text="net.name"></td>
+            <td class="p-3">
+              <span class="px-2 py-0.5 rounded text-[10px] font-semibold border inline-flex items-center space-x-1"
+                    :class="(net.disabled === 'true' || net.disabled === true || net.disabled === 'yes') ? 'bg-slate-500/10 text-slate-400 border-slate-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'">
+                <span class="w-1.5 h-1.5 rounded-full" :class="(net.disabled === 'true' || net.disabled === true || net.disabled === 'yes') ? 'bg-slate-400' : 'bg-emerald-500 animate-pulse'"></span>
+                <span x-text="((net.disabled === 'true' || net.disabled === true || net.disabled === 'yes') ? 'Disabled' : 'Enabled') + ' | ' + (net.status || '-')"></span>
+              </span>
+            </td>
+            <td class="p-3 font-mono text-slate-500" x-text="net.instance"></td>
+            <td class="p-3 font-mono text-cyan-600 dark:text-cyan-400" x-text="net['mac-address'] || '-' "></td>
+            <td class="p-3 font-mono text-slate-600 dark:text-slate-400" x-text="net.network"></td>
+            <td class="p-3 font-medium text-slate-700 dark:text-slate-300" x-text="net['network-name'] || '-' "></td>
+            <td class="p-3 font-mono text-slate-500" x-text="net.mtu"></td>
+            <td class="p-3 text-[10px] space-x-1">
+              <span class="px-1.5 py-0.5 rounded border font-medium inline-block"
+                    :class="(net['allow-managed'] === true || net['allow-managed'] === 'yes' || net['allow-managed'] === 'true' || net['allow-managed'] === 1) ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20'">
+                Managed
+              </span>
+              <span class="px-1.5 py-0.5 rounded border font-medium inline-block"
+                    :class="(net['allow-global'] === true || net['allow-global'] === 'yes' || net['allow-global'] === 'true' || net['allow-global'] === 1) ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20'">
+                Global
+              </span>
+              <span class="px-1.5 py-0.5 rounded border font-medium inline-block"
+                    :class="(net['allow-default'] === true || net['allow-default'] === 'yes' || net['allow-default'] === 'true' || net['allow-default'] === 1) ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20'">
+                Default
+              </span>
+            </td>
+            <td class="p-3 text-center space-x-1.5" x-show="window.USER_ROLE === 'admin'">
+              <button @click="openEditModal(net)" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 transition" title="Edit">
+                <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+              </button>
+              <button @click="deleteInterface(net)" class="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded border border-rose-500/30 transition" title="Hapus">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </td>
+          </tr>
+        </template>
+        <template x-if="resultData.networks.length === 0">
+          <tr><td colspan="9" class="p-4 text-center text-slate-400">Belum ada data Zerotier Interface.</td></tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+  <!-- 2. Section Instance -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
+    <div class="flex justify-between items-center mb-3">
+      <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
+        <i data-lucide="cpu" class="w-4 h-4 text-cyan-500"></i>
+        <span>Instance</span>
+      </h3>
+      <button x-show="window.USER_ROLE === 'admin'" @click="openAddInstanceModal()" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg flex items-center space-x-1 transition">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+        <span>Tambah Instance</span>
+      </button>
+    </div>
+
+    <div class="overflow-x-auto min-h-[80px]">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 dark:bg-slate-950 text-slate-400 uppercase">
+          <tr>
+            <th class="p-3 rounded-l-lg">Name</th>
+            <th class="p-3">Port</th>
+            <th class="p-3">Distance</th>
+            <th class="p-3">Status</th>
+            <th class="p-3">Interfaces</th>
+            <th class="p-3 text-center rounded-r-lg" x-show="window.USER_ROLE === 'admin'">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          <template x-for="ins in resultData.instance" :key="ins['.id'] || ins.name">
+            <tr>
+              <td class="p-3 font-semibold text-slate-800 dark:text-slate-200" x-text="ins.name"></td>
+              <td class="p-3 font-mono text-slate-500" x-text="ins.port || '9993'"></td>
+              <td class="p-3 font-mono text-slate-600 dark:text-slate-300" x-text="ins['route-distance'] || '1'"></td>
+              <td class="p-3 font-semibold" 
+                  :class="ins.state === 'starting' ? 'text-amber-500 animate-pulse' : (ins.disabled === 'true' || ins.disabled === true ? 'text-slate-500' : 'text-emerald-500')" 
+                  x-text="ins.state || (ins.disabled === 'true' || ins.disabled === true ? 'Disabled' : 'Running')">
+              </td>
+              <td class="p-3 font-mono text-cyan-600 dark:text-cyan-400" x-text="ins.interfaces || ins.interface || '-'"></td>
+              <td class="p-3 text-center space-x-2" x-show="window.USER_ROLE === 'admin'">
+                <button @click="openEditInstanceModal(ins)" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 transition" title="Edit">
+                  <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                </button>
+                <button @click="deleteInstance(ins)" class="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded border border-rose-500/30 transition" title="Hapus">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </td>
+            </tr>
+          </template>
+          <template x-if="resultData.instance.length === 0">
+            <tr><td colspan="5" class="p-4 text-center text-slate-400">Belum ada data Instance.</td></tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 3. Section Peer -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
+    <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center space-x-2">
+      <i data-lucide="users" class="w-4 h-4 text-cyan-500"></i>
+      <span>Peer</span>
+    </h3>
+    <div class="overflow-x-auto min-h-[80px]">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 dark:bg-slate-950 text-slate-400 uppercase">
+          <tr>
+            <th class="p-3 rounded-l-lg">Instance</th>
+            <th class="p-3">ZT Address</th>
+            <th class="p-3">Role</th>
+            <th class="p-3">Latency</th>
+            <th class="p-3 rounded-r-lg">Path</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          <template x-for="peer in resultData.peer" :key="peer['.id'] || peer['zt-address']">
+            <tr>
+              <td class="p-3 font-mono text-slate-500" x-text="peer.instance"></td>
+              <td class="p-3 font-mono text-cyan-600 dark:text-cyan-400 font-semibold" x-text="peer['zt-address']"></td>
+              <td class="p-3">
+                <span class="px-2 py-0.5 rounded text-[10px] font-semibold" :class="peer.role === 'PLANET' ? 'bg-cyan-500/10 text-cyan-500 border border-cyan-500/20' : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'" x-text="peer.role"></span>
+              </td>
+              <td class="p-3 font-mono text-slate-500" x-text="peer.latency || '-'"></td>
+              <td class="p-3 font-mono text-slate-400 text-[10px]" x-text="peer.path || '-'"></td>
+            </tr>
+          </template>
+          <template x-if="resultData.peer.length === 0">
+            <tr><td colspan="5" class="p-4 text-center text-slate-400">Belum ada data Peer.</td></tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 4. Section Routes -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm" x-data="{ 
+    routeFilter: 'all', 
+    sortColumn: 'dst-address', 
+    sortDirection: 'asc',
+
+    handleSort(column) {
+      if (this.sortColumn === column) {
+        this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.sortColumn = column;
+        this.sortDirection = 'asc';
+      }
+    }
+  }">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-3 gap-2">
+      <div class="flex items-center space-x-3">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
+          <i data-lucide="git-fork" class="w-4 h-4 text-cyan-500"></i>
+          <span>Routes</span>
+        </h3>
+      </div>
+      
+      <!-- DROPDOWN FILTER ROUTES -->
+      <div class="flex items-center space-x-2 text-xs">
+        <span class="text-slate-400 font-medium">Filter:</span>
+        <select x-model="routeFilter" class="bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1 text-slate-800 dark:text-slate-200 font-medium">
+          <option value="all">All</option>
+          <option value="zerotier">ZeroTier Routing</option>
+        </select>
+        <button x-show="window.USER_ROLE === 'admin'" @click="openAddRouteModal()" class="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg flex items-center space-x-1 transition shadow">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+          <span>Tambah Route</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto min-h-[80px]">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 dark:bg-slate-950 text-slate-400 uppercase select-none">
+          <tr>
+            <th class="p-3">Flags</th>
+            <th @click="handleSort('dst-address')" class="p-3 cursor-pointer hover:text-cyan-400 transition">
+              <div class="flex items-center space-x-1">
+                <span>Dst. Address</span>
+                <span x-text="sortColumn === 'dst-address' ? (sortDirection === 'asc' ? '▲' : '▼') : ''" class="text-[9px] text-cyan-500 font-bold"></span>
+              </div>
+            </th>
+            <th @click="handleSort('gateway')" class="p-3 cursor-pointer hover:text-cyan-400 transition">
+              <div class="flex items-center space-x-1">
+                <span>Gateway</span>
+                <span x-text="sortColumn === 'gateway' ? (sortDirection === 'asc' ? '▲' : '▼') : ''" class="text-[9px] text-cyan-500 font-bold"></span>
+              </div>
+            </th>
+            <th @click="handleSort('distance')" class="p-3 cursor-pointer hover:text-cyan-400 transition">
+              <div class="flex items-center space-x-1">
+                <span>Distance</span>
+                <span x-text="sortColumn === 'distance' ? (sortDirection === 'asc' ? '▲' : '▼') : ''" class="text-[9px] text-cyan-500 font-bold"></span>
+              </div>
+            </th>
+            <th @click="handleSort('routing-table')" class="p-3 cursor-pointer hover:text-cyan-400 transition">
+              <div class="flex items-center space-x-1">
+                <span>Routing Table</span>
+                <span x-text="sortColumn === 'routing-table' ? (sortDirection === 'asc' ? '▲' : '▼') : ''" class="text-[9px] text-cyan-500 font-bold"></span>
+              </div>
+            </th>
+            <th class="p-3 text-center" x-show="window.USER_ROLE === 'admin'">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          <!-- FILTER & SORTING LOGIC -->
+          <template x-for="route in resultData.routes.filter(r => {
+            if (routeFilter === 'zerotier') {
+              const gateway = (r.gateway || '').toLowerCase();
+              const flags = (r.flags || '').toLowerCase();
+
+              const isMatchInterface = (resultData.networks || []).some(net => gateway.includes((net.name || '').toLowerCase()));
+              const isMatchInstance = (resultData.instance || []).some(ins => gateway.includes((ins.name || '').toLowerCase()));
+              const isMatchSubnetGateway = gateway.startsWith('10.10.10.');
+              const isKeywordMatch = gateway.includes('zerotier') || gateway.includes('zt') || flags.includes('dav') || flags.includes('dab');
+
+              return isMatchInterface || isMatchInstance || isMatchSubnetGateway || isKeywordMatch;
+            }
+            return true;
+          }).sort((a, b) => {
+            let valA = '';
+            let valB = '';
+
+            if (sortColumn === 'dst-address') {
+              valA = a['dst-address'] || '';
+              valB = b['dst-address'] || '';
+            } else if (sortColumn === 'gateway') {
+              valA = a.gateway || '';
+              valB = b.gateway || '';
+            } else if (sortColumn === 'distance') {
+              valA = parseInt(a.distance || 1);
+              valB = parseInt(b.distance || 1);
+              return sortDirection === 'asc' ? valA - valB : valB - valA;
+            } else if (sortColumn === 'routing-table') {
+              valA = a['routing-table'] || '';
+              valB = b['routing-table'] || '';
+            }
+
+            if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+            if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
+          })" :key="route['.id'] || route['dst-address']">
+            <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition">
+              <td class="p-3">
+                <span class="font-mono font-bold text-cyan-400 cursor-help" 
+                      :title="getFlagDescription(route)" 
+                      x-text="getRouteFlags(route)"></span>
+              </td>
+              <td class="p-3 font-mono text-cyan-600 dark:text-cyan-400 font-semibold" x-text="route['dst-address']"></td>
+              <td class="p-3 font-mono text-slate-800 dark:text-slate-200" x-text="route.gateway"></td>
+              <td class="p-3 font-mono text-slate-800 dark:text-slate-200" x-text="route.distance || '1'"></td>
+              <td class="p-3 font-mono text-slate-800 dark:text-slate-200" x-text="route['routing-table'] || 'main'"></td>
+              
+              <!-- Kolom Aksi: Khusus rute Static (Disable/Enable, Edit, Hapus) -->
+              <td class="p-3 text-center" x-show="window.USER_ROLE === 'admin'">
+                <template x-if="isRouteStatic(route)">
+                  <div class="flex items-center justify-center space-x-1.5">
+                    <!-- Tombol Enable / Disable -->
+                    <button @click="toggleRouteStatus(route)" 
+                            :class="(route.disabled === 'true' || route.disabled === true) ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border-amber-500/30' : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border-emerald-500/30'" 
+                            class="p-1.5 rounded border transition" 
+                            :title="(route.disabled === 'true' || route.disabled === true) ? 'Enable Route' : 'Disable Route'">
+                      <i :data-lucide="(route.disabled === 'true' || route.disabled === true) ? 'play-circle' : 'pause-circle'" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <!-- Tombol Edit -->
+                    <button @click="openEditRouteModal(route)" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 transition" title="Edit Route">
+                      <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <!-- Tombol Hapus -->
+                    <button @click="deleteRoute(route)" class="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded border border-rose-500/30 transition" title="Hapus Route">
+                      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
+                </template>
+                <template x-if="!isRouteStatic(route)">
+                  <span class="text-[10px] text-slate-400 italic"></span>
+                </template>
+              </td>
+            </tr>
+          </template>
+          
+          <!-- Pesan Jika Data Kosong / Tidak Ditemukan -->
+          <template x-if="resultData.routes.length === 0">
+            <tr><td colspan="6" class="p-4 text-center text-slate-400">Belum ada data Routes.</td></tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PANGGIL MODAL GABUNGAN DISINI -->
+  <%- include('../partials/remote-modal') %>
+</div>
+
+<script>
+  function remoteRouterApp() {
+    return {
+      form: { host: '', port: '8728', protocol: 'API', username: '', password: '' },
+      loading: false,
+      connected: false,
+      statusText: 'Masukkan kredensial router remote.',
+      resultData: { networks: [], instance: [], peer: [], routes: [], interfaces: [], routingTables: [] },
+      refreshInterval: null,
+      
+      // Master Data Router States
+      masterRouters: [],
+      
+      // Modal States & Forms
+      showModal: false,
+      showDeleteModal: false,
+      showInstanceModal: false,
+      showDeleteInstanceModal: false,
+      isEdit: false,
+      deleteId: null,
+      deleteTargetName: '',
+      
+      // --- ROUTE CRUD STATES ---
+      showRouteModal: false,
+      showDeleteRouteModal: false,
+      isEditRoute: false,
+      routeToDeleteId: null,
+      routeToDeleteTarget: '',
+      routeForm: {
+        '.id': '',
+        'dst-address': '',
+        gateway: '',
+        distance: 1,
+        'routing-table': 'main',
+        disabled: 'false'
+      },
+
+      isRouteStatic(route) {
+        const flags = (route.flags || '').toUpperCase();
+        const type = (route.type || route.protocol || '').toLowerCase();
+        const isDynamic = flags.includes('D') || route.dynamic === 'true' || route.dynamic === true;
+        const isConnect = flags.includes('c') || type.includes('connect');
+        return !isDynamic && !isConnect;
+      },
+
+      openAddRouteModal() {
+        this.isEditRoute = false;
+        this.routeForm = {
+          '.id': '',
+          'dst-address': '',
+          gateway: '',
+          distance: 1,
+          'routing-table': 'main',
+          disabled: 'false'
+        };
+        this.showRouteModal = true;
+        setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
+      },
+
+      openEditRouteModal(route) {
+        this.isEditRoute = true;
+        this.routeForm = {
+          '.id': route['.id'] || route['id'] || route.id || '',
+        'dst-address': route['dst-address'] || '',
+        gateway: route.gateway || '',
+        distance: route.distance || 1,
+        'routing-table': route['routing-table'] || 'main',
+        disabled: (route.disabled === true || route.disabled === 'true') ? 'true' : 'false'
+        };
+        this.showRouteModal = true;
+        setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
+      },
+
+      async submitRouteForm() {
+        const endpoint = this.isEditRoute ? '/api/remote/route/update' : '/api/remote/route/add';
+        const payload = {
+          ...this.routeForm,
+          host: this.form.host,
+          port: this.form.port,
+          protocol: this.form.protocol,
+          username: this.form.username,
+          password: this.form.password
+        };
+
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const res = await response.json();
+          if (!response.ok || !res.success) throw new Error(res.message || 'Gagal memproses route.');
+
+          this.showRouteModal = false;
+          this.triggerToast(res.message, 'success');
+          this.connectAndFetch();
+        } catch (err) {
+          this.triggerToast(err.message, 'error');
+        }
+      },
+
+      async toggleRouteStatus(route) {
+        const routeId = route['.id'] || route['id'] || route.id;
+        const isCurrentlyDisabled = route.disabled === 'true' || route.disabled === true;
+        const newDisabledState = isCurrentlyDisabled ? 'false' : 'true';
+
+        try {
+          const response = await fetch('/api/remote/route/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              host: this.form.host,
+              port: this.form.port,
+              protocol: this.form.protocol,
+              username: this.form.username,
+              password: this.form.password,
+              '.id': routeId,
+              'dst-address': route['dst-address'],
+              gateway: route.gateway,
+              distance: route.distance || 1,
+              'routing-table': route['routing-table'] || 'main',
+              disabled: newDisabledState
+            })
+          });
+          const res = await response.json();
+          if (!response.ok || !res.success) throw new Error(res.message || 'Gagal mengubah status route.');
+
+          this.triggerToast(`Route berhasil di-${newDisabledState === 'true' ? 'disable' : 'enable'}`, 'success');
+          this.connectAndFetch();
+        } catch (err) {
+          this.triggerToast(err.message, 'error');
+        }
+      },
+
+      deleteRoute(route) {
+        this.routeToDeleteId = route['.id'] || route['id'] || route.id;
+        this.routeToDeleteTarget = route['dst-address'];
+        this.showDeleteRouteModal = true;
+      },
+
+      async confirmDeleteRoute() {
+        try {
+          const response = await fetch('/api/remote/route/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              host: this.form.host,
+              port: this.form.port,
+              protocol: this.form.protocol,
+              username: this.form.username,
+              password: this.form.password,
+              id: this.routeToDeleteId
+            })
+          });
+          const res = await response.json();
+          if (!response.ok || !res.success) throw new Error(res.message || 'Gagal menghapus route.');
+
+          this.showDeleteRouteModal = false;
+          this.triggerToast(res.message, 'success');
+          this.connectAndFetch();
+        } catch (err) {
+          this.showDeleteRouteModal = false;
+          this.triggerToast(err.message, 'error');
+        }
+      },
+
+      // Toast Notification State
+      showToast: false,
+      toastMessage: '',
+      toastType: 'success',
+
+      // Interface Form Model
+      form: { 
+        host: '', port: '8728', protocol: 'API', username: '', password: '',
+        '.id': '', name: '', network: '', instance: 'zt1', disabled: 'false',
+        'allow-managed': 'yes', 'allow-global': 'yes', 'allow-default': 'yes' 
+      },
+
+      // Instance Form Model
+      instanceForm: { '.id': '', name: 'zt1', ztPort: 9993, routeDistance: 1, interfacesList: ['all'], disabled: 'false' },
+
+      triggerToast(message, type = 'success') {
+        this.toastMessage = message;
+        this.toastType = type;
+        this.showToast = true;
+        setTimeout(() => { this.showToast = false; }, 3500);
+      },
+
+      updateDefaultPort() {
+        if (this.form.protocol === 'API') this.form.port = '8728';
+        else if (this.form.protocol === 'API-SSL') this.form.port = '8729';
+        else if (this.form.protocol === 'WWW') this.form.port = '80';
+        else if (this.form.protocol === 'WWW-SSL') this.form.port = '443';
+      },
+
+      // Fetch Master Routers from SQLite Backend
+      async fetchMasterRouters() {
+        try {
+          const res = await fetch('/api/master-routers');
+          const result = await res.json();
+          if (result.success) {
+            this.masterRouters = result.data;
+          }
+        } catch (err) {
+          console.error('Gagal memuat master routers:', err);
+        }
+      },
+
+      // Load Selected Router Preset to Form
+      loadRouterPreset(routerId) {
+        if (!routerId) return;
+        const selected = this.masterRouters.find(r => r.id == routerId);
+        if (selected) {
+          this.form.host = selected.host;
+          this.form.protocol = selected.protocol || 'API';
+          this.form.port = selected.port || 8728;
+          this.form.username = selected.username;
+          this.form.password = selected.password;
+          this.triggerToast(`Memuat konfigurasi: ${selected.name}`, 'success');
+        }
+      },
+
+      // Fungsi penerjemah flag rute sesuai pedoman MikroTik (D: Dynamic, X: Disabled, A: Active, c: Connect, s: Static, b: BGP/Bridge, v: VPN)
+      getRouteFlags(route) {
+        if (route.flags && typeof route.flags === 'string') {
+          return route.flags;
+        }
+
+        let flags = '';
+        const isDynamic = route.dynamic === 'true' || route.dynamic === true;
+        const isDisabled = route.disabled === 'true' || route.disabled === true;
+        const isActive = route.active === 'true' || route.active === true;
+        
+        const type = (route.type || route.protocol || '').toLowerCase();
+        const gateway = (route.gateway || '').toLowerCase();
+
+        if (isDynamic) flags += 'D';
+        if (isDisabled) flags += 'X';
+        if (isActive) flags += 'A';
+
+        if (type.includes('connect') || route.connect === 'true' || route.connect === true || !route.gateway) {
+          flags += 'c';
+        } else if (type.includes('static') || route.static === 'true' || route.static === true) {
+          flags += 's';
+        } else if (gateway.includes('10.10.10.') || gateway.includes('zerotier') || gateway.includes('zt') || type.includes('vpn')) {
+          flags += 'v';
+        } else {
+          flags += 'b';
+        }
+
+        return flags || 'DAC';
+      },
+
+      getFlagDescription(route) {
+        const flagStr = this.getRouteFlags(route).toUpperCase();
+        const descriptions = {
+          'D': 'dynamic',
+          'X': 'disabled',
+          'A': 'active',
+          'C': 'connect',
+          'S': 'static',
+          'B': 'bgp',
+          'V': 'vpn',
+          '+': 'ecmp'
+        };
+
+        let details = [];
+        for (let char of flagStr) {
+          if (descriptions[char]) {
+            details.push(`${char} - ${descriptions[char]}`);
+          }
+        }
+        return details.length > 0 ? details.join(', ') : flagStr;
+      },
+
+      async connectAndFetch() {
+        if (!this.form.host || !this.form.username) {
+          alert('Host dan Username wajib diisi!');
+          return;
+        }
+        this.loading = true;
+        this.statusText = 'Menghubungkan ke router remote...';
+
+        if (this.refreshInterval) clearInterval(this.refreshInterval);
+
+        try {
+          const res = await fetch('/api/remote/fetch-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.form)
+          });
+          const result = await res.json();
+          if (result.success) {
+            this.resultData = result.data;
+            this.connected = true;
+            this.statusText = '✅ Terkoneksi & Auto-Refresh Aktif!';
+            setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
+
+            // AUTO-REFRESH SETIAP 4 DETIK
+            this.refreshInterval = setInterval(async () => {
+              if (!this.connected) return;
+              try {
+                const bgRes = await fetch('/api/remote/fetch-data', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(this.form)
+                });
+                const bgResult = await bgRes.json();
+                if (bgResult.success) {
+                  this.resultData = bgResult.data;
+                }
+              } catch (err) {}
+            }, 4000);
+
+          } else {
+            this.connected = false;
+            this.statusText = '❌ Gagal: ' + result.message;
+            alert('Gagal koneksi: ' + result.message);
+          }
+        } catch (e) {
+          this.connected = false;
+          this.statusText = '❌ Terjadi kesalahan jaringan.';
+          alert('Terjadi kesalahan jaringan.');
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      // --- INTERFACE CRUD ---
+      openAddModal() {
+        this.isEdit = false;
+        this.form['.id'] = '';
+        this.form.name = 'zerotier-';
+        this.form.network = '';
+        this.form.instance = 'zt1';
+        this.form['allow-managed'] = 'yes';
+        this.form['allow-global'] = 'yes';
+        this.form['allow-default'] = 'yes';
+        this.showModal = true;
+      },
+      
+      openEditModal(net) {
+        this.isEdit = true;
+        const parseYesNo = (val) => (val === true || val === 'yes' || val === 'true' || val === 1) ? 'yes' : 'no';
+
+        this.form['.id'] = net['.id'] || net['id'] || net.id || '';
+        this.form.name = net.name;
+        this.form.network = net.network;
+        this.form.instance = net.instance || 'zt1';
+        
+        this.form.disabled = (net.disabled === true || net.disabled === 'true' || net.disabled === 'yes' || net.disabled === 1) ? 'true' : 'false';
+
+        this.form['allow-managed'] = parseYesNo(net['allow-managed']);
+        this.form['allow-global'] = parseYesNo(net['allow-global']);
+        this.form['allow-default'] = parseYesNo(net['allow-default']);
+        this.showModal = true;
+      },
+
+      async submitForm() {
+        const endpoint = this.isEdit ? '/api/remote/update' : '/api/remote/add';
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.form)
+          });
+          const res = await response.json();
+          if (!response.ok || !res.success) throw new Error(res.message || 'Gagal memproses interface.');
+
+          this.showModal = false;
+          this.triggerToast(res.message, 'success');
+          this.connectAndFetch();
+        } catch (err) {
+          this.triggerToast(err.message, 'error');
+        }
+      },
+
+      deleteInterface(net) {
+        this.deleteId = net['.id'] || net['id'] || net.id;
+        this.deleteTargetName = net.name;
+        this.showDeleteModal = true;
+      },
+
+      async confirmDelete() {
+        try {
+          const response = await fetch('/api/remote/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ host: this.form.host, port: this.form.port, protocol: this.form.protocol, username: this.form.username, password: this.form.password, id: this.deleteId })
+          });
+          const res = await response.json();
+          if (!response.ok || !res.success) throw new Error(res.message || 'Gagal menghapus interface.');
+
+          this.showDeleteModal = false;
+          this.triggerToast(res.message, 'success');
+          this.connectAndFetch();
+        } catch (err) {
+          this.showDeleteModal = false;
+          this.triggerToast(err.message, 'error');
+        }
+      },
+
+      // --- INSTANCE CRUD ---
+      openAddInstanceModal() {
+        this.isEdit = false;
+        this.instanceForm = { '.id': '', name: 'zt1', ztPort: 9993, routeDistance: 1, interfacesList: ['all'], disabled: 'false' };
+        this.showInstanceModal = true;
+        setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
+      },
+
+      openEditInstanceModal(ins) {
+        this.isEdit = true;
+        
+        let rawInterfaces = ins.interfaces || ins.interface || 'all';
+        let parsedList = Array.isArray(rawInterfaces) ? rawInterfaces : rawInterfaces.split(',').map(i => i.trim());
+        if (parsedList.length === 0) parsedList = ['all'];
+
+        this.instanceForm = {
+          '.id': ins['.id'] || ins['id'] || ins.name,
+          name: ins.name,
+          ztPort: ins.port && ins.port != '8089' && ins.port != '443' && ins.port != '80' ? ins.port : 9993,
+          routeDistance: ins['route-distance'] || 1,
+          interfacesList: parsedList,
+          disabled: (ins.disabled === true || ins.disabled === 'true') ? 'true' : 'false'
+        };
+        this.showInstanceModal = true;
+        setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
+      },
+
+      async submitInstanceForm() {
+        const endpoint = this.isEdit ? '/api/remote/instance/update' : '/api/remote/instance/add';
+        
+        const payload = {
+          ...this.instanceForm,
+          interfaces: this.instanceForm.interfacesList.join(','),
+          host: this.form.host,
+          port: this.form.port,
+          protocol: this.form.protocol,
+          username: this.form.username,
+          password: this.form.password
+        };
+
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const res = await response.json();
+          if (!response.ok || !res.success) throw new Error(res.message || 'Gagal memproses instance.');
+
+          this.showInstanceModal = false;
+          this.triggerToast(res.message, 'success');
+          this.connectAndFetch();
+        } catch (err) {
+          this.triggerToast(err.message, 'error');
+        }
+      },
+
+      deleteInstance(ins) {
+        this.deleteId = ins['.id'] || ins['id'] || ins.name;
+        this.deleteTargetName = ins.name;
+        this.showDeleteInstanceModal = true;
+      },
+
+      async confirmDeleteInstance() {
+        try {
+          const response = await fetch('/api/remote/instance/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ host: this.form.host, port: this.form.port, protocol: this.form.protocol, username: this.form.username, password: this.form.password, id: this.deleteId })
+          });
+          const res = await response.json();
+          if (!response.ok || !res.success) throw new Error(res.message || 'Gagal menghapus instance.');
+
+          this.showDeleteInstanceModal = false;
+          this.triggerToast(res.message, 'success');
+          this.connectAndFetch();
+        } catch (err) {
+          this.showDeleteInstanceModal = false;
+          this.triggerToast(err.message, 'error');
+        }
+      }
+    }
+  }
+</script>
