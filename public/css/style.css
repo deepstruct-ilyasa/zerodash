@@ -74,6 +74,7 @@
     --tracking-wider: 0.05em;
     --radius-lg: 0.5rem;
     --radius-xl: 0.75rem;
+    --radius-2xl: 1rem;
     --radius-3xl: 1.5rem;
     --ease-in: cubic-bezier(0.4, 0, 1, 1);
     --ease-out: cubic-bezier(0, 0, 0.2, 1);
@@ -327,6 +328,9 @@
   }
   .z-10 {
     z-index: 10;
+  }
+  .z-20 {
+    z-index: 20;
   }
   .z-40 {
     z-index: 40;
@@ -764,6 +768,9 @@
   }
   .rounded {
     border-radius: 0.25rem;
+  }
+  .rounded-2xl {
+    border-radius: var(--radius-2xl);
   }
   .rounded-3xl {
     border-radius: var(--radius-3xl);
@@ -1557,6 +1564,10 @@
     --tw-outline-style: none;
     outline-style: none;
   }
+  .select-all {
+    -webkit-user-select: all;
+    user-select: all;
+  }
   .select-none {
     -webkit-user-select: none;
     user-select: none;
@@ -1639,6 +1650,14 @@
     .hover\:bg-cyan-500:hover {
       background-color: var(--color-cyan-500);
     }
+    .hover\:bg-cyan-500\/20:hover {
+      background-color: color-mix(in srgb, oklch(71.5% 0.143 215.221) 20%, transparent);
+    }
+    @supports (color: color-mix(in lab, red, red)) {
+      .hover\:bg-cyan-500\/20:hover {
+        background-color: color-mix(in oklab, var(--color-cyan-500) 20%, transparent);
+      }
+    }
     .hover\:bg-cyan-600\/30:hover {
       background-color: color-mix(in srgb, oklch(60.9% 0.126 221.723) 30%, transparent);
     }
@@ -1701,6 +1720,9 @@
     }
     .hover\:text-cyan-400:hover {
       color: var(--color-cyan-400);
+    }
+    .hover\:text-cyan-600:hover {
+      color: var(--color-cyan-600);
     }
     .hover\:text-slate-200:hover {
       color: var(--color-slate-200);
@@ -1958,6 +1980,9 @@
         .dark\:hover\:bg-slate-800\/50:hover {
           background-color: color-mix(in oklab, var(--color-slate-800) 50%, transparent);
         }
+      }
+      .dark\:hover\:text-cyan-400:hover {
+        color: var(--color-cyan-400);
       }
       .dark\:hover\:text-slate-200:hover {
         color: var(--color-slate-200);

@@ -13,6 +13,14 @@ document.addEventListener('alpine:init', () => {
     deleteTargetName: '',
     instanceToDeleteId: null,
 
+    showToast: false,
+    toastMessage: '',
+    toastType: 'success',
+
+    showQrModal: false,
+    qrNetworkId: '',
+    qrNetName: '',
+
     // Modals State: Members
     showAddMemberModal: false,
     showEditMemberModal: false,
@@ -352,6 +360,157 @@ document.addEventListener('alpine:init', () => {
       } catch (e) {
         alert('Error hapus network');
       }
+    },
+
+    openQrModal(netId, netName) {
+      this.qrNetworkId = netId;
+      this.qrNetName = netName || 'ZT Controller';
+      this.showQrModal = true;
+
+      // Render QR Code (Pastikan pustaka qrcode.js lokal sudah dimuat, atau menggunakan API generator mandiri)
+      setTimeout(() => {
+        const container = document.getElementById('qrcodeContainer');
+        container.innerHTML = ''; // Bersihkan QR sebelumnya
+        
+        // Jika Anda menggunakan qrcode.js lokal:
+        if (window.QRCode) {
+          new QRCode(container, {
+            text: this.qrNetworkId,
+            width: 180,
+            height: 180,
+            colorDark: "#0f172a",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+          });
+        } else {
+          // Fallback jika belum memakai lib qrcode.js, tampilkan teks/SVG sederhana atau arahkan ke generator offline
+          container.innerHTML = `<div class="text-xs text-slate-500 p-4 font-mono">Network ID: <br><b>${this.qrNetworkId}</b></div>`;
+        }
+        
+        if (window.lucide) window.lucide.createIcons();
+      }, 50);
+    },
+
+    // Tambahkan fungsi downloadQrCode di dalam objek x-data komponen Anda:
+    downloadQrCode() {
+      const originalCanvas = document.querySelector('#qrcodeContainer canvas');
+      if (!originalCanvas) {
+        this.triggerToast('QR Code belum siap diunduh.', 'error');
+        return;
+      }
+
+      // Buat kanvas baru secara virtual untuk mendesain border dan teks tambahan
+      const padding = 30; // Jarak tepi
+      const headerHeight = 60; // Ruang untuk teks nama jaringan & Network ID
+      const newWidth = originalCanvas.width + (padding * 2);
+      const newHeight = originalCanvas.height + (padding * 2) + headerHeight;
+
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = newWidth;
+      exportCanvas.height = newHeight;
+      const ctx = exportCanvas.getContext('2d');
+
+      // 1. Background Putih Bersih
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, newWidth, newHeight);
+
+      // 2. Buat Border / Bingkai Luar yang Elegan
+      ctx.strokeStyle = '#cbd5e1'; // Warna abu-abu border (slate-300)
+      ctx.lineWidth = 4;
+      ctx.strokeRect(10, 10, newWidth - 20, newHeight - 20);
+
+      // 3. Tambahkan Teks Header (Nama Jaringan & ID)
+      ctx.fillStyle = '#0f172a'; // Warna teks gelap (slate-900)
+      ctx.font = 'bold 16px ui-sans-serif, system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(this.qrNetName, newWidth / 2, padding + 15);
+
+      ctx.fillStyle = '#0891b2'; // Warna teks Network ID (cyan-600)
+      ctx.font = 'bold 13px ui-monospace, monospace';
+      ctx.fillText(this.qrNetworkId, newWidth / 2, padding + 38);
+
+      // 4. Gambar QR Code asli ke tengah kanvas baru di bawah teks
+      ctx.drawImage(originalCanvas, padding, padding + headerHeight - 10);
+
+      // 5. Proses Unduh Gambar
+      const imageURL = exportCanvas.toDataURL('image/png');
+      const downloadLink = document.createElement('a');
+      downloadLink.href = imageURL;
+      downloadLink.download = `ZT-QR-${this.qrNetName.replace(/[^a-zA-Z0-9]/g, '_')}-${this.qrNetworkId}.png`;
+      
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      
+      this.triggerToast('QR Code ber-border berhasil diunduh!', 'success');
+    },
+
+    copyToClipboard(text, btnElement) {
+      if (!text) return;
+
+      // Fungsi penyalinan (Fallback kompatibel HTTP/HTTPS)
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+          this.triggerToast(`Network ID "${text}" berhasil disalin!`, 'success');
+        }).catch(() => {
+          this.fallbackCopyTextToClipboard(text);
+        });
+      } else {
+        this.fallbackCopyTextToClipboard(text);
+      }
+      
+      // Efek visual: ubah ikon tombol sementara menjadi check (centang)
+      if (btnElement) {
+        const icon = btnElement.querySelector('i');
+        if (icon) {
+          icon.setAttribute('data-lucide', 'check');
+          icon.classList.add('text-emerald-500');
+          if (window.lucide) window.lucide.createIcons();
+
+          setTimeout(() => {
+            icon.setAttribute('data-lucide', 'copy');
+            icon.classList.remove('text-emerald-500');
+            if (window.lucide) window.lucide.createIcons();
+          }, 2000);
+        }
+      }
+    },
+
+    fallbackCopyTextToClipboard(text) {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      
+      // Hindari pergeseran halaman saat elemen dibuat
+      textArea.style.position = "fixed";
+      textArea.style.top = "0";
+      textArea.style.left = "0";
+      textArea.style.opacity = "0";
+      
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          this.triggerToast(`Network ID "${text}" berhasil disalin!`, 'success');
+        } else {
+          this.triggerToast('Gagal menyalin Network ID.', 'error');
+        }
+      } catch (err) {
+        this.triggerToast('Gagal menyalin Network ID.', 'error');
+      }
+
+      document.body.removeChild(textArea);
+    },
+
+    triggerToast(message, type = 'success') {
+      this.toastMessage = message;
+      this.toastType = type;
+      this.showToast = true;
+      setTimeout(() => { 
+        this.showToast = false; 
+      }, 3000);
     },
 
     // ==========================================

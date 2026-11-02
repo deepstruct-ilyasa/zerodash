@@ -395,6 +395,16 @@ window.initAllTopologies = async function(networks, members, parseBoolHelper) {
 
             const newNetwork = new vis.Network(container, data, options);
 
+            // TAMBAHKAN INI: Agar otomatis berada di tengah canvas saat pertama kali dirender
+            newNetwork.once("afterDrawing", function() {
+                newNetwork.fit({
+                    animation: {
+                        duration: 600,
+                        easingFunction: 'easeInOutQuad'
+                    }
+                });
+            });
+
             newNetwork.on("dragEnd", async function(params) {
                 const currentStored = await fetchServerPositions();
                 const positions = newNetwork.getPositions(params.nodes);

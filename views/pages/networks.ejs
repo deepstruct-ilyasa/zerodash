@@ -45,14 +45,23 @@
             <th class="p-3.5">IP Range</th>
             <th class="p-3.5">Visibility</th>
             <th class="p-3.5">Status</th>
-            <th class="p-3.5 text-center" x-show="window.USER_ROLE === 'admin'">Aksi</th>
+            <th class="p-3.5 text-center">Aksi</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
           <template x-for="net in networks" :key="net['.id'] || net.network">
             <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
-              <td class="p-3.5 font-bold text-slate-900 dark:text-slate-100" x-text="net.name || 'ZT Controller'"></td>
-              <td class="p-3.5 font-mono font-bold text-cyan-600 dark:text-cyan-400" x-text="net.network || net['network-id'] || '-' "></td>
+              <td class="p-3.5 font-bold text-slate-900 dark:text-slate-100" x-text="net.name || '-'"></td>
+              <td class="p-3.5">
+                <div class="flex items-center space-x-2 font-mono font-bold text-cyan-600 dark:text-cyan-400">
+                  <span x-text="net.network || net['network-id'] || '-' "></span>
+                  <button type="button" @click.stop="copyToClipboard(net.network || net['network-id'], $el)" 
+                          class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 rounded transition z-20 cursor-pointer" 
+                          title="Salin Network ID">
+                    <i data-lucide="copy" class="w-3.5 h-3.5 pointer-events-none"></i>
+                  </button>
+                </div>
+              </td>
               <td class="p-3.5 font-mono text-slate-400" x-text="net.instance || 'zt1'"></td>
               <td class="p-3.5 font-mono" x-text="net.mtu || '2800'"></td>
               <td class="p-3.5 font-mono text-emerald-600 dark:text-emerald-400 font-semibold" x-text="net['ip-range'] || '-' "></td>
@@ -64,12 +73,16 @@
               <td class="p-3.5">
                 <span :class="parseBool(net.disabled) ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'" class="px-2 py-0.5 rounded text-[11px] font-semibold border" x-text="parseBool(net.disabled) ? 'DISABLED' : 'ACTIVE'"></span>
               </td>
-              <td class="p-3.5 text-center" x-show="window.USER_ROLE === 'admin'">
+              <td class="p-3.5 text-center">
                 <div class="flex items-center justify-center space-x-1.5">
-                  <button @click="openEditNetModal(net)" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 transition" title="Edit">
+                  <button @click="openQrModal(net.network || net['network-id'], net.name)" class="p-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-500 rounded border border-cyan-500/30 transition" title="Generate QR Code Network ID">
+                    <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
+                  </button>
+                  
+                  <button @click="openEditNetModal(net)"  x-show="window.USER_ROLE === 'admin'" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 transition" title="Edit">
                     <i data-lucide="edit" class="w-3.5 h-3.5"></i>
                   </button>
-                  <button @click="openDeleteNetModal(net)" class="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded border border-rose-500/30 transition" title="Hapus">
+                  <button @click="openDeleteNetModal(net)" x-show="window.USER_ROLE === 'admin'" class="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded border border-rose-500/30 transition" title="Hapus">
                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                   </button>
                 </div>
@@ -139,6 +152,21 @@
         </tbody>
       </table>
     </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div x-show="showToast" 
+       class="fixed bottom-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold flex items-center space-x-3 transition-all"
+       :class="toastType === 'success' ? 'bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-950 border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400'"
+       x-transition:enter="transform ease-out duration-300 transition"
+       x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+       x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
+       x-transition:leave="transition ease-in duration-100"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0"
+       style="display: none;">
+    <i :data-lucide="toastType === 'success' ? 'check-circle' : 'alert-circle'" class="w-4 h-4"></i>
+    <span x-text="toastMessage"></span>
   </div>
 
 </div>

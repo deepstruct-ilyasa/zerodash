@@ -81,7 +81,7 @@ db.serialize(() => {
     if (err) {
       console.error('❌ Gagal membuat tabel topology_positions:', err.message);
     } else {
-      console.log('✅ Tabel topology_positions siap digunakan.');
+      console.log('📌 Tabel topology_positions siap digunakan.');
     }
   });
 });
