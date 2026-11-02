@@ -48,9 +48,30 @@ router.post('/settings/controller', requireAuth, requireAdmin, (req, res) => {
   });
 });
 
-// Instances Endpoint
-router.get('/controller/instances', (req, res) => {
+// ==========================================
+// INTERFACE ENDPOINTS
+// ==========================================
+router.get('/router/interfaces', requireAuth, (req, res) => {
+  handleRequest(res, () => controllerService.getInterfaces());
+});
+
+// ==========================================
+// INSTANCES ENDPOINTS (FULL CRUD)
+// ==========================================
+router.get('/controller/instances', requireAuth, (req, res) => {
   handleRequest(res, () => controllerService.getInstances());
+});
+
+router.post('/controller/instances', requireAuth, requireAdmin, (req, res) => {
+  handleRequest(res, () => controllerService.addInstance(req.body));
+});
+
+router.patch('/controller/instances/:id', requireAuth, requireAdmin, (req, res) => {
+  handleRequest(res, () => controllerService.updateInstance(req.params.id, req.body));
+});
+
+router.delete('/controller/instances/:id', requireAuth, requireAdmin, (req, res) => {
+  handleRequest(res, () => controllerService.deleteInstance(req.params.id));
 });
 
 // Networks Endpoints (Full CRUD)

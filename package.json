@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "tailwind:watch": "npx tailwindcss -i ./public/css/input.css -o ./public/css/style.css --watch"
   },
   "keywords": [
     "mikrotik",
@@ -26,5 +26,9 @@
     "lucide": "^1.65.0",
     "routeros-client": "^1.1.1",
     "sqlite3": "^6.0.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
   }
 }

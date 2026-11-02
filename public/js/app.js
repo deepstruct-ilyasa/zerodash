@@ -6,6 +6,13 @@ document.addEventListener('alpine:init', () => {
 
     selectedControllerId: '',
 
+    // Modals State: Instances (Winbox Style)
+    showInstanceModal: false,
+    showDeleteInstanceModal: false,
+    isEdit: false,
+    deleteTargetName: '',
+    instanceToDeleteId: null,
+
     // Modals State: Members
     showAddMemberModal: false,
     showEditMemberModal: false,
@@ -27,7 +34,18 @@ document.addEventListener('alpine:init', () => {
     instances: [],
     networks: [],
     members: [],
+    routerInterfaces: [],
     logs: [],
+
+    // Form Instance State (Winbox Style with multi-interface array)
+    instanceForm: {
+      id: '',
+      name: 'zt1',
+      ztPort: 9993,
+      routeDistance: 1,
+      interfacesList: ['all'],
+      disabled: 'false'
+    },
 
     // Form Add Member
     newMember: {
@@ -117,44 +135,141 @@ document.addEventListener('alpine:init', () => {
     },
 
     async fetchData(silent = false) {
-      if (!silent) this.addLog('GET', '/api/controller/networks, members & instances');
+      if (!silent) this.addLog('GET', '/api/controller/networks, members, instances & interfaces');
       try {
-        const [netRes, memRes, instRes] = await Promise.allSettled([
+        const [netRes, memRes, instRes, ifaceRes] = await Promise.allSettled([
           fetch('/api/controller/networks').then(r => r.json()),
           fetch('/api/controller/members').then(r => r.json()),
-          fetch('/api/controller/instances').then(r => r.json())
+          fetch('/api/controller/instances').then(r => r.json()),
+          fetch('/api/router/interfaces').then(r => r.json()) // Sesuaikan endpoint router interfaces kawan jika ada
         ]);
 
         if (netRes.status === 'fulfilled' && netRes.value.success) {
           this.networks = netRes.value.data || [];
         }
-
         if (memRes.status === 'fulfilled' && memRes.value.success) {
           this.members = memRes.value.data || [];
         }
-
         if (instRes.status === 'fulfilled' && instRes.value.success) {
           this.instances = instRes.value.data || [];
         }
+        if (ifaceRes.status === 'fulfilled' && ifaceRes.value.success) {
+          this.routerInterfaces = ifaceRes.value.data || [];
+        }
       } catch (err) {
-        if (!silent) this.addLog('ERROR', 'Gagal sync data controller: ' + err.message);
+        if (!silent) this.addLog('ERROR', 'Gagal sync data: ' + err.message);
+      }
+    },
+    // ==========================================
+    // --- CONTROLLER INSTANCE CRUD (WINBOX STYLE) ---
+    // ==========================================
+    openAddInstanceModal() {
+      this.isEdit = false;
+      this.instanceForm = {
+        id: '',
+        name: 'zt1',
+        ztPort: 9993,
+        routeDistance: 1,
+        interfacesList: ['all'],
+        disabled: 'false'
+      };
+      this.showInstanceModal = true;
+      setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
+    },
+
+    openEditInstanceModal(ins) {
+      this.isEdit = true;
+      let ifaces = ['all'];
+      const rawIfaces = ins.interfaces || ins.interface;
+      if (rawIfaces) {
+        ifaces = rawIfaces.split(',').map(s => s.trim()).filter(Boolean);
+      }
+
+      this.instanceForm = {
+        id: ins['.id'],
+        name: ins.name || 'zt1',
+        ztPort: ins.port || 9993,
+        routeDistance: ins['route-distance'] || 1,
+        interfacesList: ifaces.length > 0 ? ifaces : ['all'],
+        disabled: (ins.disabled === 'true' || ins.disabled === true) ? 'true' : 'false'
+      };
+      this.showInstanceModal = true;
+      setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
+    },
+
+    async submitInstanceForm() {
+      const finalInterfaces = this.instanceForm.interfacesList.join(',');
+      const payload = {
+        name: this.instanceForm.name,
+        ztPort: parseInt(this.instanceForm.ztPort) || 9993,
+        routeDistance: parseInt(this.instanceForm.routeDistance) || 1,
+        interfaces: finalInterfaces,
+        disabled: this.instanceForm.disabled === 'true' || this.instanceForm.disabled === true
+      };
+
+      const endpoint = this.isEdit 
+        ? `/api/controller/instances/${encodeURIComponent(this.instanceForm.id)}` 
+        : '/api/controller/instances';
+      const method = this.isEdit ? 'PATCH' : 'POST';
+
+      this.addLog(method, endpoint);
+      try {
+        const res = await fetch(endpoint, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (result.success) {
+          this.addLog('SUCCESS', `ZeroTier Instance ${this.instanceForm.name} berhasil disimpan`);
+          this.showInstanceModal = false;
+          this.fetchData();
+        } else {
+          alert('Gagal menyimpan instance: ' + result.message);
+        }
+      } catch (e) {
+        alert('Error koneksi saat menyimpan instance');
+      }
+    },
+
+    openDeleteInstanceModal(ins) {
+      this.deleteTargetName = ins.name;
+      this.instanceToDeleteId = ins['.id'];
+      this.showDeleteInstanceModal = true;
+      setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
+    },
+
+    async confirmDeleteInstance() {
+      if (!this.instanceToDeleteId) return;
+      const id = this.instanceToDeleteId;
+
+      this.addLog('DELETE', `/api/controller/instances/${id}`);
+      try {
+        const res = await fetch(`/api/controller/instances/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const result = await res.json();
+        if (result.success) {
+          this.addLog('SUCCESS', `ZeroTier Instance berhasil dihapus`);
+          this.showDeleteInstanceModal = false;
+          this.instanceToDeleteId = null;
+          this.fetchData();
+        } else {
+          alert('Gagal menghapus instance: ' + result.message);
+        }
+      } catch (e) {
+        alert('Error koneksi saat menghapus instance');
       }
     },
 
     // ==========================================
-    // --- CONTROLLER INSTANCE CRUD ---
+    // --- CONTROLLER NETWORKS CRUD ---
     // ==========================================
     openAddNetModal() {
-      // Jika data instances sudah ada, otomatis pilih instance pertama
       if (this.instances.length > 0) {
         this.newNet.instance = this.instances[0].name || '-';
       }
       this.showAddNetModal = true;
     },
 
-    // ==========================================
-    // --- CONTROLLER NETWORKS CRUD ---
-    // ==========================================
     async submitAddNetwork() {
       if (!this.newNet.name) return alert('Nama Controller wajib diisi!');
       this.addLog('POST', `/api/controller/networks (${this.newNet.name})`);
@@ -388,7 +503,6 @@ document.addEventListener('alpine:init', () => {
       const currentNet = this.networks.find(net => net['.id'] === this.selectedControllerId);
       if (!currentNet) return [];
 
-      // Ambil nama controller atau Network ID untuk mencocokkan member
       const netName = currentNet.name;
       const netId = currentNet.network || currentNet['network-id'];
 

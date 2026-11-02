@@ -2,10 +2,20 @@
 const { getProtocol, restRequest, getSocketMenu, parseBoolean } = require('../config/routerosClient');
 
 class ControllerService {
+  // --- INTERFACES ROUTER ---
+  async getInterfaces() {
+    const protocol = await getProtocol();
+    if (protocol.startsWith('WWW')) {
+      return await restRequest('GET', '/interface');
+    } else {
+      const api = await getSocketMenu();
+      return await api.write('/interface/print');
+    }
+  }
 
-  // --- INSTANCES ---
+  // --- INSTANCES (FULL CRUD) ---
   async getInstances() {
-    const protocol = await getProtocol(); // Tangkap dari database
+    const protocol = await getProtocol();
     if (protocol.startsWith('WWW')) {
       return await restRequest('GET', '/zerotier');
     } else {
@@ -13,6 +23,71 @@ class ControllerService {
       return await api.write('/zerotier/print');
     }
   }
+
+  async addInstance(data) {
+    const protocol = await getProtocol();
+    const isDisabled = data.disabled === 'true' || data.disabled === true;
+
+    if (protocol.startsWith('WWW')) {
+      const payload = {
+        name: data.name,
+        port: parseInt(data.ztPort) || 9993,
+        'route-distance': parseInt(data.routeDistance) || 1,
+        interfaces: data.interfaces || 'all',
+        disabled: isDisabled ? 'yes' : 'no'
+      };
+      return await restRequest('PUT', '/zerotier', payload);
+    } else {
+      const api = await getSocketMenu();
+      return await api.write('/zerotier/add', [
+        `=name=${data.name}`,
+        `=port=${parseInt(data.ztPort) || 9993}`,
+        `=route-distance=${parseInt(data.routeDistance) || 1}`,
+        `=interfaces=${data.interfaces || 'all'}`,
+        `=disabled=${isDisabled ? 'yes' : 'no'}`
+      ]);
+    }
+  }
+
+  async updateInstance(id, data) {
+    const protocol = await getProtocol();
+    const isDisabled = data.disabled === 'true' || data.disabled === true;
+
+    if (protocol.startsWith('WWW')) {
+      const encodedId = encodeURIComponent(id);
+      const payload = {
+        name: data.name,
+        port: parseInt(data.ztPort) || 9993,
+        'route-distance': parseInt(data.routeDistance) || 1,
+        interfaces: data.interfaces || 'all',
+        disabled: isDisabled ? 'yes' : 'no'
+      };
+      return await restRequest('PATCH', `/zerotier/${encodedId}`, payload);
+    } else {
+      const api = await getSocketMenu();
+      return await api.write('/zerotier/set', [
+        `=.id=${id}`,
+        `=name=${data.name}`,
+        `=port=${parseInt(data.ztPort) || 9993}`,
+        `=route-distance=${parseInt(data.routeDistance) || 1}`,
+        `=interfaces=${data.interfaces || 'all'}`,
+        `=disabled=${isDisabled ? 'yes' : 'no'}`
+      ]);
+    }
+  }
+
+  async deleteInstance(id) {
+    const protocol = await getProtocol();
+    if (protocol.startsWith('WWW')) {
+      const encodedId = encodeURIComponent(id);
+      return await restRequest('DELETE', `/zerotier/${encodedId}`);
+    } else {
+      const api = await getSocketMenu();
+      return await api.write('/zerotier/remove', [`=.id=${id}`]);
+    }
+  }
+
+
 
   // --- NETWORKS ---
   async getNetworks() {
@@ -66,6 +141,14 @@ class ControllerService {
       if (payload['ip-range'] !== undefined) params.push(`=ip-range=${payload['ip-range']}`);
       if (payload.private !== undefined) params.push(`=private=${payload.private}`);
       if (payload.disabled !== undefined) params.push(`=disabled=${payload.disabled ? 'yes' : 'no'}`);
+      
+      // ==========================================
+      // TAMBAHKAN INI AGAR ROUTES IKUT TERKIRIM KE MIKROTIK
+      // ==========================================
+      if (payload.routes !== undefined) {
+        params.push(`=routes=${payload.routes}`);
+      }
+
       return await api.write('/zerotier/controller/set', params);
     }
   }

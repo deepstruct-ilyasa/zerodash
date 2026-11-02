@@ -32,14 +32,14 @@
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm transition-colors">
       <span class="text-xs text-slate-400 uppercase font-semibold">Controller Status</span>
       <div class="flex items-center justify-between mt-2">
-        <h4 class="text-xl font-bold text-emerald-600 dark:text-emerald-400" x-text="networks.length > 0 ? 'Active Hub' : 'Standby'">Active Hub</h4>
+        <h4 class="text-xl font-bold text-emerald-600 dark:text-emerald-400" x-text="networks.length > 0 ? 'Active Hub' : 'Standby'">- - -</h4>
         <i data-lucide="shield-check" class="w-5 h-5 text-indigo-500"></i>
       </div>
     </div>
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm transition-colors">
       <span class="text-xs text-slate-400 uppercase font-semibold">Access Role</span>
       <div class="flex items-center justify-between mt-2">
-        <h4 class="text-xl font-bold text-purple-600 dark:text-purple-400 uppercase" x-text="window.USER_ROLE">Admin</h4>
+        <h4 class="text-xl font-bold text-purple-600 dark:text-purple-400 uppercase" x-text="window.USER_ROLE">- - -</h4>
         <i data-lucide="user-cog" class="w-5 h-5 text-purple-500"></i>
       </div>
     </div>
@@ -49,7 +49,7 @@
   <div class="space-y-8 mt-6">
     <template x-for="net in networks" :key="net['.id'] || net.network">
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm transition-colors">
-        <!-- Container Kanvas (Posisi aman di belakang header saat discroll) -->
+        <!-- Container Kanvas -->
         <div class="relative w-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#020617] transition-colors mt-2">
           <div class="absolute inset-0 bg-[linear-gradient(to_right,#cbd5e1_1px,transparent_1px),linear-gradient(to_bottom,#cbd5e1_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:2rem_2rem] pointer-events-none opacity-40 transition-colors"></div>
           
@@ -71,6 +71,10 @@
 <script>
 if (!window.visNetworksRegistry) {
     window.visNetworksRegistry = {};
+}
+
+if (!window.visDatasetsRegistry) {
+    window.visDatasetsRegistry = {};
 }
 
 async function fetchServerPositions() {
@@ -214,7 +218,7 @@ window.initAllTopologies = async function(networks, members, parseBoolHelper) {
                         </div>
                     </div>
 
-                    <div style="border-top: 1px solid ${theme.divider}; padding-top: 5px; display: flex; justify-content: space-between; align-items: center; font-size: 9px; font-family: monospace; color: ${theme.subText};">
+                    <div style="border-top: 1px solid ${theme.divider}; padding-top: 5px; display: flex; justify-content: space-around; align-items: center; font-size: 9px; font-family: monospace; color: ${theme.subText};">
                         <span>ZeroTier Virtual Node</span>
                         <span style="color: ${badgeText}; font-weight: 700;">${isConnected ? '● Active Tunnel Secure' : '○ Connection Lost'}</span>
                     </div>
@@ -229,116 +233,118 @@ window.initAllTopologies = async function(networks, members, parseBoolHelper) {
         const netKey = String(net['.id'] || net.network).replace(/[^a-zA-Z0-9]/g, '');
         const containerId = 'canvas_' + netKey;
         
-        setTimeout(() => {
-            const container = document.getElementById(containerId);
-            if (!container) return;
+        const container = document.getElementById(containerId);
+        if (!container) return;
 
-            const ctrlId = 'ctrl_' + netKey;
-            const nodesData = [];
-            const edgesData = [];
+        const ctrlId = 'ctrl_' + netKey;
+        const nodesData = [];
+        const edgesData = [];
 
-            const isPrivateNet = checkBool(net.private) || String(net.private) === 'true' || net.private === '*1';
-            const controllerSubnet = net['ip-range'] || net.subnet || net['assigned-address'] || net.address || net['bridge'] || 'Managed Subnet';
+        const isPrivateNet = checkBool(net.private) || String(net.private) === 'true' || net.private === '*1';
+        const controllerSubnet = net['ip-range'] || net.subnet || net['assigned-address'] || net.address || net['bridge'] || 'Managed Subnet';
 
-            const networkMembers = (members || []).filter(m => {
-                const netId = net['.id'] || ''; 
-                const netNetwork = net.network || net['network-id'] || ''; 
-                const itemNetwork = m.network || '';
-                return itemNetwork === netId || itemNetwork === net.name || itemNetwork === netNetwork || !itemNetwork;
-            });
+        const networkMembers = (members || []).filter(m => {
+            const netId = net['.id'] || ''; 
+            const netNetwork = net.network || net['network-id'] || ''; 
+            const itemNetwork = m.network || '';
+            return itemNetwork === netId || itemNetwork === net.name || itemNetwork === netNetwork || !itemNetwork;
+        });
 
-            let ctrlPos = storedPositions[ctrlId] || {};
+        let ctrlPos = storedPositions[ctrlId] || {};
+        nodesData.push({
+            id: ctrlId,
+            shape: 'image',
+            image: getControllerSVG(
+                net.name || 'ZT Controller', 
+                net.network || net['network-id'], 
+                net.instance || '-', 
+                net.mtu || '-', 
+                isPrivateNet, 
+                controllerSubnet, 
+                networkMembers.length
+            ),
+            shapeProperties: { useImageSize: true },
+            x: ctrlPos.x !== undefined ? ctrlPos.x : undefined,
+            y: ctrlPos.y !== undefined ? ctrlPos.y : undefined,
+            fixed: false
+        });
+
+        networkMembers.forEach(m => {
+            const mId = 'mem_' + netKey + '_' + String(m['.id'] || m['zt-address']).replace(/[^a-zA-Z0-9]/g, '');
+            const isConnected = checkBool(m.authorized);
+            const fullZtId = m['zt-address'] || m['zts-id'] || '---';
+            
+            let memPos = storedPositions[mId] || {};
             nodesData.push({
-                id: ctrlId,
+                id: mId,
                 shape: 'image',
-                image: getControllerSVG(
-                    net.name || 'ZT Controller', 
-                    net.network || net['network-id'], 
-                    net.instance || '-', 
-                    net.mtu || '-', 
-                    isPrivateNet, 
-                    controllerSubnet, 
-                    networkMembers.length
+                image: getMemberSVG(
+                    m.name || 'Branch Node', 
+                    m['ip-address'] || m.ip || 'Unassigned', 
+                    fullZtId, 
+                    m['last-seen'] || 'Active', 
+                    isConnected
                 ),
                 shapeProperties: { useImageSize: true },
-                x: ctrlPos.x !== undefined ? ctrlPos.x : undefined,
-                y: ctrlPos.y !== undefined ? ctrlPos.y : undefined,
+                x: memPos.x !== undefined ? memPos.x : undefined,
+                y: memPos.y !== undefined ? memPos.y : undefined,
                 fixed: false
             });
 
-            networkMembers.forEach(m => {
-                const mId = 'mem_' + netKey + '_' + String(m['.id'] || m['zt-address']).replace(/[^a-zA-Z0-9]/g, '');
-                const isConnected = checkBool(m.authorized);
-                const fullZtId = m['zt-address'] || m['zts-id'] || '---';
-                
-                let memPos = storedPositions[mId] || {};
-                nodesData.push({
-                    id: mId,
-                    shape: 'image',
-                    image: getMemberSVG(
-                        m.name || 'Branch Node', 
-                        m['ip-address'] || m.ip || 'Unassigned', 
-                        fullZtId, 
-                        m['last-seen'] || 'Active', 
-                        isConnected
-                    ),
-                    shapeProperties: { useImageSize: true },
-                    x: memPos.x !== undefined ? memPos.x : undefined,
-                    y: memPos.y !== undefined ? memPos.y : undefined,
-                    fixed: false
-                });
+            edgesData.push({
+                from: ctrlId,
+                to: mId,
+                color: { 
+                    color: isConnected ? '#10b981' : '#f43f5e',
+                    highlight: isConnected ? '#34d399' : '#fb7185',
+                    opacity: 0.9
+                },
+                width: 1.5,
+                dashes: isConnected ? false : [6, 6], 
+                shadow: {
+                    enabled: true,
+                    color: isConnected ? '#10b981' : '#f43f5e',
+                    size: 3,
+                    x: 0,
+                    y: 0
+                },
+                smooth: { type: 'cubicBezier', forceDirection: 'vertical', roundness: 0.5 }
+            });
+        });
 
-                // Garis dipertipis menjadi 1.5 pixel agar terlihat lebih elegan dan rapi
-                edgesData.push({
-                    from: ctrlId,
-                    to: mId,
-                    color: { 
-                        color: isConnected ? '#10b981' : '#f43f5e',
-                        highlight: isConnected ? '#34d399' : '#fb7185',
-                        opacity: 0.9
-                    },
-                    width: 1.25,
-                    dashes: isConnected ? false : [5, 5], 
-                    shadow: {
-                        enabled: isConnected,
-                        color: '#10b981',
-                        size: 3,
-                        x: 0,
-                        y: 0
-                    },
-                    smooth: { type: 'cubicBezier', forceDirection: 'vertical', roundness: 0.5 }
+        if (window.visNetworksRegistry[netKey]) {
+            const netInstance = window.visNetworksRegistry[netKey];
+            
+            // GUNAKAN CLEAR DAN ADD AGAR DATA LAMA BERSIH TOTAL DAN TIDAK MENUMPUK/MENETEBAL
+            netInstance.body.data.nodes.clear();
+            netInstance.body.data.nodes.add(nodesData);
+
+            netInstance.body.data.edges.clear();
+            netInstance.body.data.edges.add(edgesData);
+        } else {
+            const data = { nodes: new vis.DataSet(nodesData), edges: new vis.DataSet(edgesData) };
+            const options = {
+                physics: { enabled: false },
+                interaction: { hover: false, zoomView: true, dragView: true, dragNodes: true }
+            };
+
+            const newNetwork = new vis.Network(container, data, options);
+
+            newNetwork.on("dragEnd", async function(params) {
+                const currentStored = await fetchServerPositions();
+                const positions = newNetwork.getPositions(params.nodes);
+                
+                params.nodes.forEach(nodeId => {
+                    if (positions[nodeId]) {
+                        currentStored[nodeId] = { x: positions[nodeId].x, y: positions[nodeId].y };
+                    }
                 });
+                
+                await saveServerPositions(currentStored);
             });
 
-            if (window.visNetworksRegistry[netKey]) {
-                const netInstance = window.visNetworksRegistry[netKey];
-                netInstance.body.data.nodes.update(nodesData);
-                netInstance.body.data.edges.update(edgesData);
-            } else {
-                const data = { nodes: new vis.DataSet(nodesData), edges: new vis.DataSet(edgesData) };
-                const options = {
-                    physics: { enabled: false },
-                    interaction: { hover: false, zoomView: true, dragView: true, dragNodes: true }
-                };
-
-                const newNetwork = new vis.Network(container, data, options);
-
-                newNetwork.on("dragEnd", async function(params) {
-                    const currentStored = await fetchServerPositions();
-                    const positions = newNetwork.getPositions(params.nodes);
-                    
-                    params.nodes.forEach(nodeId => {
-                        if (positions[nodeId]) {
-                            currentStored[nodeId] = { x: positions[nodeId].x, y: positions[nodeId].y };
-                        }
-                    });
-                    
-                    await saveServerPositions(currentStored);
-                });
-
-                window.visNetworksRegistry[netKey] = newNetwork;
-            }
-        }, 100);
+            window.visNetworksRegistry[netKey] = newNetwork;
+        }
     });
 };
 </script>
