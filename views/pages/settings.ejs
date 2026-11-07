@@ -1,85 +1,303 @@
-<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm max-w-xl mx-auto relative" x-data="settingsApp()">
+<div class="max-w-6xl mx-auto space-y-6 relative">
   
-  <div class="flex items-center space-x-2 pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
-    <i data-lucide="settings" class="w-5 h-5 text-cyan-500"></i>
-    <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">Konfigurasi Master Controller Router</h3>
-  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
-  <form @submit.prevent="saveSettings()" class="space-y-4 text-xs">
-    <div>
-      <label class="block text-slate-400 mb-1">Host / IP Address</label>
-      <input type="text" x-model="form.host" placeholder="192.168.88.1" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-800 dark:text-slate-200 font-mono focus:ring-1 focus:ring-cyan-500">
-    </div>
-
-    <div class="grid grid-cols-2 gap-3">
-        <div>
-            <label class="block text-slate-400 mb-1">Protokol</label>
-            <select x-model="form.protocol" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-cyan-500">
-                <option value="API">API</option>
-                <option value="API-SSL">API-SSL</option>
-                <option value="WWW">HTTP</option>
-                <option value="WWW-SSL">HTTPS</option>
-            </select>
-        </div>
-        <div>
-            <label class="block text-slate-400 mb-1">Port</label>
-            <input type="text" x-model="form.port" placeholder="8728" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-800 dark:text-slate-200 font-mono focus:ring-1 focus:ring-cyan-500">
-        </div>
-    </div>
-
-    <div>
-      <label class="block text-slate-400 mb-1">Username</label>
-      <input type="text" x-model="form.username" placeholder="admin" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-800 dark:text-slate-200 font-mono focus:ring-1 focus:ring-cyan-500">
-    </div>
-
-    <div>
-      <label class="block text-slate-400 mb-1">Password</label>
-      <input type="password" x-model="form.password" placeholder="••••••••" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-800 dark:text-slate-200 font-mono focus:ring-1 focus:ring-cyan-500">
-    </div>
-
-    <div class="flex justify-end pt-4">
-      <button type="submit" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-lg shadow transition flex items-center space-x-2" :disabled="loading">
-        <i data-lucide="save" class="w-4 h-4"></i>
-        <span x-text="loading ? 'Menyimpan...' : 'Simpan Kredensial'"></span>
-      </button>
-    </div>
-  </form>
-
-  <!-- ========================================== -->
-  <!-- MODAL NOTIFIKASI HASIL PENYIMPANAN         -->
-  <!-- ========================================== -->
-  <div x-show="showModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" style="display: none;" x-transition.opacity>
-    <div @click.outside="showModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-sm shadow-xl text-center transform transition-all" x-transition.scale.90>
-      
-      <!-- Ikon Animasi -->
-      <div class="mx-auto flex items-center justify-center h-14 w-14 rounded-full mb-4"
-           :class="modalType === 'success' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-rose-500/20 text-rose-500'">
-        <i data-lucide="check-circle-2" x-show="modalType === 'success'" class="w-8 h-8"></i>
-        <i data-lucide="x-octagon" x-show="modalType === 'error'" class="w-8 h-8"></i>
+    <!-- ========================================== -->
+    <!-- KOTAK 1: FORM MASTER CONTROLLER            -->
+    <!-- ========================================== -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm" x-data="settingsApp()">
+      <!-- HEADER MASTER CONTROLLER -->
+      <div class="flex items-center space-x-2 pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
+        <i data-lucide="settings" class="w-5 h-5 text-cyan-500"></i>
+        <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">Konfigurasi Master Controller Router</h3>
       </div>
-      
-      <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2" x-text="modalTitle"></h3>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mb-6" x-text="modalMessage"></p>
-      
-      <button @click="showModal = false" class="w-full px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-lg transition">
-        Tutup
-      </button>
+
+      <!-- FORM MASTER CONTROLLER -->
+      <form @submit.prevent="saveSettings()" class="space-y-4 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Host / IP Address</label>
+          <input type="text" x-model="form.host" placeholder="192.168.88.1" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-800 dark:text-slate-200 font-mono focus:ring-1 focus:ring-cyan-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="block text-slate-400 mb-1">Protokol</label>
+                <select x-model="form.protocol" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-cyan-500">
+                    <option value="API">API</option>
+                    <option value="API-SSL">API-SSL</option>
+                    <option value="WWW">HTTP</option>
+                    <option value="WWW-SSL">HTTPS</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-slate-400 mb-1">Port</label>
+                <input type="text" x-model="form.port" placeholder="8728" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-800 dark:text-slate-200 font-mono focus:ring-1 focus:ring-cyan-500">
+            </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Username</label>
+          <input type="text" x-model="form.username" placeholder="admin" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-800 dark:text-slate-200 font-mono focus:ring-1 focus:ring-cyan-500">
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Password</label>
+          <input type="password" x-model="form.password" placeholder="••••••••" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-800 dark:text-slate-200 font-mono focus:ring-1 focus:ring-cyan-500">
+        </div>
+
+        <div class="flex justify-end pt-2">
+          <button type="submit" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-lg shadow transition flex items-center space-x-2" :disabled="loading">
+            <i data-lucide="save" class="w-4 h-4"></i>
+            <span x-text="loading ? 'Menyimpan...' : 'Simpan Kredensial'"></span>
+          </button>
+        </div>
+      </form>
     </div>
-  </div>
+
+    <!-- ========================================== -->
+    <!-- KOTAK 2: TRAFFIC FLOW SETTINGS (WINBOX)    -->
+    <!-- ========================================== -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm" x-data="trafficFlowWinbox()">
+      <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="sliders" class="w-5 h-5 text-cyan-500"></i>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">Traffic Flow Settings</h3>
+        </div>
+        <div class="flex space-x-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-lg border border-slate-200 dark:border-slate-800 text-xs">
+          <button type="button" @click="activeTab = 'general'" :class="activeTab === 'general' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200'" class="px-3 py-1.5 rounded-md font-medium transition">General</button>
+          <button type="button" @click="activeTab = 'targets'" :class="activeTab === 'targets' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200'" class="px-3 py-1.5 rounded-md font-medium transition">Targets</button>
+        </div>
+      </div>
+
+      <!-- TAB GENERAL -->
+      <div x-show="activeTab === 'general'" class="bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-4 text-xs font-mono">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400 font-semibold">Enabled</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" x-model="form.enabled" class="sr-only peer">
+            <div class="w-9 h-5 peer-focus:outline-none rounded-full peer transition-colors duration-200"
+                 :class="form.enabled ? 'bg-emerald-600' : 'bg-rose-600'">
+              <div class="absolute top-[2px] left-[2px] bg-white border border-slate-300 rounded-full h-4 w-4 transition-all"
+                   :class="form.enabled ? 'translate-x-full border-white' : 'border-slate-300'"></div>
+            </div>
+          </label>
+        </div>
+
+        <!-- INTERFACES -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400 font-semibold">Interfaces</span>
+            <button type="button" @click="addInterfaceRow()" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[10px] flex items-center space-x-1">
+              <i data-lucide="plus" class="w-3 h-3"></i><span>Add Interface</span>
+            </button>
+          </div>
+
+          <div class="space-y-2">
+            <template x-for="(ifaceItem, index) in selectedInterfaces" :key="index">
+              <div class="flex items-center space-x-2">
+                <select x-model="selectedInterfaces[index]" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-800 dark:text-slate-200">
+                  <option value="all">-- All Interfaces --</option>
+                  <template x-for="iface in routerInterfaces" :key="iface['.id']">
+                    <option :value="iface.name" x-text="iface.name"></option>
+                  </template>
+                </select>
+                <button type="button" @click="removeInterfaceRow(index)" class="p-2 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white rounded-lg transition">
+                  <i data-lucide="minus" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 items-center gap-4 pt-2">
+          <span class="text-slate-400 font-semibold">Cache Entries</span>
+          <select x-model="form.cacheEntries" class="col-span-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-800 dark:text-slate-200">
+            <option value="32k">32k</option>
+            <option value="64k">64k</option>
+            <option value="128k">128k</option>
+            <option value="256k">256k</option>
+            <option value="512k">512k</option>
+            <option value="1M">1M</option>
+            <option value="2M">2M</option>
+            <option value="4M">4M</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-3 items-center gap-4">
+          <span class="text-slate-400 font-semibold">Active Timeout</span>
+          <input type="text" x-model="form.activeFlowTimeout" placeholder="00:00:05" class="col-span-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-800 dark:text-slate-200">
+        </div>
+
+        <div class="grid grid-cols-3 items-center gap-4">
+          <span class="text-slate-400 font-semibold">Inactive Timeout</span>
+          <input type="text" x-model="form.inactiveFlowTimeout" placeholder="00:00:05" class="col-span-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-800 dark:text-slate-200">
+        </div>
+
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400 font-semibold">Packet Sampling</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" x-model="form.packetSampling" class="sr-only peer">
+            <div class="w-9 h-5 peer-focus:outline-none rounded-full peer transition-colors duration-200"
+                 :class="form.packetSampling ? 'bg-emerald-600' : 'bg-rose-600'">
+              <div class="absolute top-[2px] left-[2px] bg-white border border-slate-300 rounded-full h-4 w-4 transition-all"
+                   :class="form.packetSampling ? 'translate-x-full border-white' : 'border-slate-300'"></div>
+            </div>
+          </label>
+        </div>
+
+        <div class="flex justify-end pt-3 border-t border-slate-200 dark:border-slate-800">
+          <button type="button" @click="saveGeneral()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-lg transition" :disabled="loading">
+            <span x-text="loading ? 'Applying...' : 'Apply General Settings'"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB TARGETS -->
+      <div x-show="activeTab === 'targets'" class="bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-4 text-xs">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800">
+          <span class="font-bold text-slate-300">Traffic Flow Targets List</span>
+          <button type="button" @click="openTargetModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium flex items-center space-x-1">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> <span>Add Target</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto min-h-[220px]">
+          <table class="w-full text-left font-mono">
+            <thead>
+              <tr class="text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                <th class="py-2 px-2">Src. Addr</th>
+                <th class="py-2 px-2">Dst. Addr</th>
+                <th class="py-2 px-2">Port</th>
+                <th class="py-2 px-2">Ver</th>
+                <th class="py-2 px-2 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="t in targets" :key="t['.id']">
+                <tr class="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-900">
+                  <td class="py-2 px-2" x-text="t.address || '0.0.0.0'"></td>
+                  <td class="py-2 px-2 font-bold text-cyan-400" x-text="t['dst-address'] || t.destination"></td>
+                  <td class="py-2 px-2" x-text="t.port"></td>
+                  <td class="py-2 px-2" x-text="t.version"></td>
+                  <td class="py-2 px-2 text-right space-x-2">
+                    <button @click="editTarget(t)" class="text-cyan-400 hover:underline">Edit</button>
+                    <button @click="promptDeleteTarget(t)" class="text-rose-400 hover:underline">Remove</button>
+                  </td>
+                </tr>
+              </template>
+              <template x-if="targets.length === 0">
+                <tr><td colspan="5" class="py-8 text-center text-slate-500 italic">Belum ada target Traffic Flow.</td></tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- MODAL TARGET EDITOR (DI DALAM SCOPE TRAFFIC FLOW) -->
+      <div x-show="showTargetModal" class="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm" style="display: none;" x-transition.opacity>
+        <div @click.outside="showTargetModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-md shadow-2xl space-y-4 font-mono text-xs">
+          <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+            <h4 class="font-bold text-slate-100">Traffic Flow Target Editor</h4>
+            <button @click="showTargetModal = false" class="text-slate-400 hover:text-white">✕</button>
+          </div>
+
+          <form @submit.prevent="saveTarget()" class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400">Enabled</span>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" x-model="targetForm.enabled" class="sr-only peer">
+                <div class="w-9 h-5 peer-focus:outline-none rounded-full peer transition-colors duration-200"
+                     :class="targetForm.enabled ? 'bg-emerald-600' : 'bg-rose-600'">
+                  <div class="absolute top-[2px] left-[2px] bg-white border border-slate-300 rounded-full h-4 w-4 transition-all"
+                       :class="targetForm.enabled ? 'translate-x-full border-white' : 'border-slate-300'"></div>
+                </div>
+              </label>
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">Src. Address</label>
+              <input type="text" x-model="targetForm.address" placeholder="0.0.0.0" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded p-2 text-slate-200">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">Dst. Address (Server IP)</label>
+              <input type="text" x-model="targetForm.dst_address" placeholder="36.91.103.221" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded p-2 text-slate-200">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-slate-400 mb-1">Port</label>
+                <input type="number" x-model="targetForm.port" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded p-2 text-slate-200">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Version</label>
+                <select x-model="targetForm.version" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded p-2 text-slate-200">
+                  <option value="5">5</option>
+                  <option value="9">9 (IPFIX)</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-slate-400 mb-1">v9 Template Refresh</label>
+                <input type="number" x-model="targetForm.v9_template_refresh" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded p-2 text-slate-200">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">v9 Template Timeout</label>
+                <input type="number" x-model="targetForm.v9_template_timeout" placeholder="1800" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded p-2 text-slate-200">
+              </div>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-4">
+              <button type="button" @click="showTargetModal = false" class="px-3 py-2 bg-slate-800 text-slate-300 rounded hover:bg-slate-700">Cancel</button>
+              <button type="submit" class="px-4 py-2 bg-cyan-600 text-white font-semibold rounded hover:bg-cyan-500">OK / Apply</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- MODAL NOTIFIKASI / KONFIRMASI (DI DALAM SCOPE TRAFFIC FLOW) -->
+      <div x-show="showModal" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm" style="display: none;" x-transition.opacity>
+        <div @click.outside="showModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-sm shadow-xl text-center transform transition-all" x-transition.scale.90>
+          
+          <div class="mx-auto flex items-center justify-center h-14 w-14 rounded-full mb-4"
+               :class="modalType === 'success' ? 'bg-emerald-500/20 text-emerald-500' : (modalType === 'confirm' ? 'bg-amber-500/20 text-amber-500' : 'bg-rose-500/20 text-rose-500')">
+            <i data-lucide="check-circle-2" x-show="modalType === 'success'" class="w-8 h-8"></i>
+            <i data-lucide="help-circle" x-show="modalType === 'confirm'" class="w-8 h-8"></i>
+            <i data-lucide="x-octagon" x-show="modalType === 'error'" class="w-8 h-8"></i>
+          </div>
+          
+          <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2" x-text="modalTitle"></h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mb-6" x-text="modalMessage"></p>
+          
+          <template x-if="modalType === 'confirm'">
+            <div class="flex space-x-2">
+              <button @click="showModal = false" class="w-1/2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-lg transition">
+                Batal
+              </button>
+              <button @click="executeConfirm()" class="w-1/2 px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-lg transition">
+                Ya, Hapus
+              </button>
+            </div>
+          </template>
+
+          <template x-if="modalType !== 'confirm'">
+            <button @click="showModal = false" class="w-full px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-lg transition">
+              Tutup
+            </button>
+          </template>
+        </div>
+      </div>
+
+    </div> <!-- Penutup Kotak 2 (trafficFlowWinbox) -->
+
+  </div> <!-- Penutup Grid -->
 
 </div>
 
 <script>
   document.addEventListener('alpine:init', () => {
+    // Controller Settings App
     Alpine.data('settingsApp', () => ({
       form: { host: '', port: '8728', protocol: 'API', username: '', password: '' },
       loading: false,
-      
-      // State Modal
-      showModal: false,
-      modalType: 'success',
-      modalTitle: '',
-      modalMessage: '',
       
       init() {
         this.loadSettings();
@@ -108,27 +326,237 @@
           const json = await res.json();
           
           if (json.success) {
-            this.showNotification('success', 'Berhasil Disimpan', 'Kredensial Controller Sesuai !!');
+            alert('Kredensial Controller Berhasil Disimpan !!');
           } else {
-            this.showNotification('error', 'Gagal Menyimpan', json.message);
+            alert('Gagal: ' + json.message);
           }
         } catch (err) {
-          this.showNotification('error', 'Kesalahan Jaringan', 'Terjadi kesalahan saat menghubungi server.');
+          alert('Terjadi kesalahan saat menghubungi server.');
         } finally {
           this.loading = false;
         }
+      }
+    }));
+
+    // Traffic Flow Winbox Style App
+    Alpine.data('trafficFlowWinbox', () => ({
+      activeTab: 'general',
+      loading: false,
+      routerInterfaces: [],
+      targets: [],
+      showTargetModal: false,
+      selectedInterfaces: ['all'],
+      
+      // State Modal Notifikasi & Konfirmasi
+      showModal: false,
+      modalType: 'success',
+      modalTitle: '',
+      modalMessage: '',
+      confirmCallback: null,
+      targetToDeleteId: null,
+
+      form: {
+        enabled: false,
+        cacheEntries: '1M',
+        activeFlowTimeout: '00:00:05',
+        inactiveFlowTimeout: '00:00:05',
+        packetSampling: false
+      },
+      targetForm: {
+        '.id': null,
+        enabled: true,
+        address: '0.0.0.0',
+        dst_address: '',
+        port: 2055,
+        version: 5,
+        v9_template_refresh: 20,
+        v9_template_timeout: 1800
       },
 
-      showNotification(type, title, message) {
+      init() {
+        this.loadInterfaces().then(() => {
+          this.loadGeneral();
+        });
+        this.loadTargets();
+      },
+
+      showNotification(type, title, message, callback = null) {
         this.modalType = type;
         this.modalTitle = title;
         this.modalMessage = message;
+        this.confirmCallback = callback;
         this.showModal = true;
+        setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
+      },
+
+      executeConfirm() {
+        if (typeof this.confirmCallback === 'function') {
+          this.confirmCallback();
+        }
+        this.showModal = false;
+      },
+
+      async loadInterfaces() {
+        try {
+          const res = await fetch('/api/router/interfaces');
+          const json = await res.json();
+          if (json.success) this.routerInterfaces = json.data || [];
+        } catch (e) { console.error('Gagal memuat interfaces router'); }
+      },
+
+      async loadGeneral() {
+        try {
+          const res = await fetch('/api/router/traffic-flow');
+          const json = await res.json();
+          if (json.success && json.data) {
+            const d = json.data;
+            
+            const rawEnabled = d.enabled;
+            this.form.enabled = (rawEnabled === 'yes' || rawEnabled === true || rawEnabled === 1 || rawEnabled === 'true');
+            
+            const rawSampling = d['packet-sampling'];
+            this.form.packetSampling = (rawSampling === 'yes' || rawSampling === true || rawSampling === 1 || rawSampling === 'true');
+            
+            this.form.cacheEntries = d['cache-entries'] || '1M';
+            this.form.activeFlowTimeout = d['active-flow-timeout'] || '00:00:05';
+            this.form.inactiveFlowTimeout = d['inactive-flow-timeout'] || '00:00:05';
+
+            if (d.interfaces && d.interfaces !== 'all') {
+              this.selectedInterfaces = d.interfaces.split(',').map(i => i.trim());
+            } else {
+              this.selectedInterfaces = ['all'];
+            }
+          }
+        } catch (e) { console.error('Gagal memuat traffic flow general', e); }
+      },
+
+      async loadTargets() {
+        try {
+          const res = await fetch('/api/router/traffic-flow/targets');
+          const json = await res.json();
+          if (json.success) {
+            this.targets = json.data || [];
+          }
+        } catch (e) {
+          console.error('Gagal memuat targets traffic flow', e);
+        }
+      },
+
+      addInterfaceRow() {
+        this.selectedInterfaces.push('all');
+        setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
+      },
+
+      removeInterfaceRow(index) {
+        this.selectedInterfaces.splice(index, 1);
+        if (this.selectedInterfaces.length === 0) {
+          this.selectedInterfaces.push('all');
+        }
+      },
+
+      async saveGeneral() {
+        this.loading = true;
+        try {
+          const payload = {
+            ...this.form,
+            interfaces: this.selectedInterfaces
+          };
+          const res = await fetch('/api/router/traffic-flow', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const json = await res.json();
+          if (json.success) {
+            this.showNotification('success', 'Berhasil', 'General Traffic Flow berhasil diterapkan ke router!');
+            this.loadGeneral();
+          } else {
+            this.showNotification('error', 'Gagal', 'Gagal: ' + json.message);
+          }
+        } catch (e) { 
+          this.showNotification('error', 'Kesalahan Jaringan', 'Terjadi kesalahan saat menghubungi server.'); 
+        } finally { 
+          this.loading = false; 
+        }
+      },
+
+      openTargetModal() {
+        this.targetForm = { '.id': null, enabled: true, address: '0.0.0.0', dst_address: '', port: 2055, version: 5, v9_template_refresh: 20, v9_template_timeout: 1800 };
+        this.showTargetModal = true;
+      },
+
+      editTarget(t) {
+        const isDisabled = (t.disabled === 'true' || t.disabled === true || t.disabled === 'yes');
         
-        // Render ulang ikon Lucide untuk ikon modal
-        setTimeout(() => {
-          if (window.lucide) window.lucide.createIcons();
-        }, 50);
+        const parseRouterTimeout = (val) => {
+          if (!val) return 1800;
+          const str = String(val).trim();
+          if (!isNaN(str)) return parseInt(str);
+          const num = parseInt(str);
+          if (str.endsWith('s')) return num;
+          if (str.endsWith('m')) return num * 60;
+          if (str.endsWith('h')) return num * 3600;
+          if (str.endsWith('d')) return num * 86400;
+          if (str.endsWith('w')) return num * 604800;
+          return 1800;
+        };
+
+        const rawTimeout = t['v9-template-timeout'] || t['v9_template_timeout'] || 1800;
+
+        this.targetForm = {
+          '.id': t['.id'],
+          enabled: !isDisabled,
+          address: t.address || t['src-address'] || '0.0.0.0',
+          dst_address: t['dst-address'] || t.destination || '',
+          port: t.port || 2055,
+          version: t.version || 5,
+          v9_template_refresh: t['v9-template-refresh'] || 20,
+          v9_template_timeout: parseRouterTimeout(rawTimeout)
+        };
+        this.showTargetModal = true;
+      },
+
+      async saveTarget() {
+        try {
+          const res = await fetch('/api/router/traffic-flow/targets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.targetForm)
+          });
+          const json = await res.json();
+          if (json.success) {
+            this.showTargetModal = false;
+            this.loadTargets();
+            this.showNotification('success', 'Berhasil', 'Target Traffic Flow berhasil disimpan!');
+          } else {
+            this.showNotification('error', 'Gagal', 'Gagal: ' + json.message);
+          }
+        } catch (e) { 
+          this.showNotification('error', 'Kesalahan Jaringan', 'Terjadi kesalahan saat menghubungi server.'); 
+        }
+      },
+
+      promptDeleteTarget(t) {
+        this.targetToDeleteId = t['.id'];
+        this.showNotification('confirm', 'Konfirmasi Hapus', 'Apakah Anda yakin ingin menghapus target Traffic Flow ini?', () => {
+          this.deleteTargetConfirmed();
+        });
+      },
+
+      async deleteTargetConfirmed() {
+        if (!this.targetToDeleteId) return;
+        try {
+          const res = await fetch(`/api/router/traffic-flow/targets/${encodeURIComponent(this.targetToDeleteId)}`, { method: 'DELETE' });
+          const json = await res.json();
+          if (json.success) {
+            this.loadTargets();
+            this.showNotification('success', 'Berhasil', 'Target Traffic Flow berhasil dihapus!');
+          } else {
+            this.showNotification('error', 'Gagal', 'Gagal menghapus: ' + json.message);
+          }
+        } catch (e) { 
+          this.showNotification('error', 'Kesalahan Jaringan', 'Terjadi kesalahan saat menghubungi server.'); 
+        }
       }
     }));
   });

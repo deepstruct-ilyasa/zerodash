@@ -91,9 +91,20 @@ router.delete('/controller/networks/:id', (req, res) => {
   handleRequest(res, () => controllerService.deleteNetwork(req.params.id));
 });
 
-// Members Endpoints (Full CRUD)
+// ==========================================
+// MEMBERS ENDPOINTS (DENGAN DINAMIS IP SYNC)
+// ==========================================
 router.get('/controller/members', (req, res) => {
-  handleRequest(res, () => controllerService.getMembers());
+  handleRequest(res, async () => {
+    const members = await controllerService.getMembers();
+    
+    // Sinkronkan IP member secara otomatis agar Traffic Flow membaca IP real-time
+    if (typeof global.updateValidMemberIps === 'function') {
+      global.updateValidMemberIps(members);
+    }
+    
+    return members;
+  });
 });
 
 router.post('/controller/members', (req, res) => {
@@ -106,6 +117,44 @@ router.patch('/controller/members/:id', (req, res) => {
 
 router.delete('/controller/members/:id', (req, res) => {
   handleRequest(res, () => controllerService.deleteMember(req.params.id));
+});
+
+// Peers Endpoints (Latency & Path)
+router.get('/controller/peers', requireAuth, (req, res) => {
+  handleRequest(res, () => controllerService.getPeers());
+});
+
+// ==========================================
+// ENDPOINT TRAFFIC FLOW SETTINGS & TARGETS
+// ==========================================
+router.get('/router/traffic-flow', requireAuth, (req, res) => {
+  handleRequest(res, () => controllerService.getTrafficFlow());
+});
+
+router.post('/router/traffic-flow', requireAuth, requireAdmin, (req, res) => {
+  handleRequest(res, () => controllerService.setTrafficFlow(req.body));
+});
+
+router.get('/router/traffic-flow/targets', requireAuth, (req, res) => {
+  handleRequest(res, () => controllerService.getTrafficFlowTargets());
+});
+
+router.post('/router/traffic-flow/targets', requireAuth, requireAdmin, (req, res) => {
+  handleRequest(res, () => controllerService.saveTrafficFlowTarget(req.body));
+});
+
+router.delete('/router/traffic-flow/targets/:id', requireAuth, requireAdmin, (req, res) => {
+  handleRequest(res, () => controllerService.deleteTrafficFlowTarget(req.params.id));
+});
+
+// ==========================================
+// ENDPOINT TRAFFIC FLOW STATS
+// ==========================================
+router.get('/controller/traffic-stats', requireAuth, (req, res) => {
+  res.json({
+    success: true,
+    data: global.trafficStats || {}
+  });
 });
 
 module.exports = router;

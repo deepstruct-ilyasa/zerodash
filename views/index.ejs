@@ -16,14 +16,14 @@
   <title>ZeroDash Mikrotik</title>
   
   <link rel="stylesheet" href="/css/style.css">
-  <script>
+  <!-- <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: { colors: { darkbg: '#0B1120', cardbg: '#1E293B', accent: '#06B6D4' } }
       }
     }
-  </script>
+  </script> -->
 
   <script>
     window.USER_ROLE = '<%= currentUser ? currentUser.role : "read_only" %>';
@@ -90,16 +90,24 @@
       </div>
       <% } %>
 
-      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm transition-colors duration-200">
         <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Controller API Live Output Log</h4>
-        <div class="bg-slate-950 rounded-lg p-3 font-mono text-[11px] h-32 overflow-y-auto space-y-2 border border-slate-800/80">
+        <!-- Ubah background box log agar memiliki mode terang (slate-50) dan gelap (slate-950) -->
+        <div class="bg-slate-50 dark:bg-slate-950 rounded-lg p-3 font-mono text-[11px] h-32 overflow-y-auto space-y-2 border border-slate-200 dark:border-slate-800/80 transition-colors duration-200">
           <template x-for="log in logs" :key="log.time + log.message">
-            <div class="grid grid-cols-[85px_70px_1fr] items-start gap-2 pb-1.5">
-              <span class="text-slate-500 pt-0.5" x-text="`[${log.time}]`"></span>
+            <div class="grid grid-cols-[85px_70px_1fr] items-start gap-2 pb-1.5 border-b border-slate-100 dark:border-slate-800/50 last:border-transparent">
+              <!-- Teks waktu -->
+              <span class="text-slate-400 dark:text-slate-500 pt-0.5" x-text="`[${log.time}]`"></span>
+              <!-- Teks badge disesuaikan agar sedikit lebih gelap di mode terang (600) dan terang di mode gelap (400) -->
               <div>
-                <span class="font-bold px-1.5 py-0.5 rounded text-[10px] inline-block" :class="log.type === 'SUCCESS' ? 'bg-emerald-500/20 text-emerald-400' : (log.type === 'ERROR' ? 'bg-rose-500/20 text-rose-400' : 'bg-cyan-500/20 text-cyan-400')" x-text="log.type"></span>
+                <span class="font-bold px-1.5 py-0.5 rounded text-[10px] inline-block" 
+                      :class="log.type === 'SUCCESS' ? 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' : 
+                            (log.type === 'ERROR' ? 'bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400' : 
+                            'bg-cyan-500/10 text-cyan-600 dark:bg-cyan-500/20 dark:text-cyan-400')" 
+                      x-text="log.type"></span>
               </div>
-              <span class="text-slate-300 break-words whitespace-normal" x-text="log.message"></span>
+              <!-- Teks pesan log -->
+              <span class="text-slate-700 dark:text-slate-300 break-words whitespace-normal" x-text="log.message"></span>
             </div>
           </template>
         </div>

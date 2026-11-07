@@ -40,27 +40,19 @@
             </td>
             <td class="p-3.5 text-center" x-show="window.USER_ROLE === 'admin'">
               <div class="flex items-center justify-center space-x-1.5">
-                <!-- Tombol Status Auth (Toggle Icon) -->
-                <button @click="toggleAuth(m['.id'], m.authorized)" 
+                <button type="button" @click="toggleAuth(m['.id'], m.authorized)" 
                         :class="parseBool(m.authorized) ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border-amber-500/30' : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border-emerald-500/30'" 
                         class="p-1.5 rounded border transition" 
                         :title="parseBool(m.authorized) ? 'Klik untuk Revoke' : 'Klik untuk Authorize'">
-                  <template x-if="parseBool(m.authorized)">
-                    <i data-lucide="monitor-x" class="w-3.5 h-3.5"></i>
-                  </template>
-                  <template x-if="!parseBool(m.authorized)">
-                    <i data-lucide="monitor-check" class="w-3.5 h-3.5"></i>
-                  </template>
+                  <i :data-lucide="parseBool(m.authorized) ? 'monitor-x' : 'monitor-check'" class="w-3.5 h-3.5 pointer-events-none"></i>
                 </button>
                 
-                <!-- Tombol Edit Ikon -->
-                <button @click="openEditMemberModal(m)" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 transition" title="Edit">
-                  <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                <button type="button" @click="openEditMemberModal(m)" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 transition" title="Edit">
+                  <i data-lucide="edit" class="w-3.5 h-3.5 pointer-events-none"></i>
                 </button>
                 
-                <!-- Tombol Hapus Ikon -->
-                <button @click="openDeleteMemberModal(m)" class="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded border border-rose-500/30 transition" title="Hapus">
-                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                <button type="button" @click="openDeleteMemberModal(m)" class="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded border border-rose-500/30 transition" title="Hapus">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i>
                 </button>
               </div>
             </td>
@@ -68,5 +60,19 @@
         </template>
       </tbody>
     </table>
+  </div>
+  <!-- TOAST NOTIFICATION -->
+  <div x-show="showToast" 
+       class="fixed bottom-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold flex items-center space-x-3 transition-all"
+       :class="toastType === 'success' ? 'bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-950 border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400'"
+       x-transition:enter="transform ease-out duration-300 transition"
+       x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+       x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
+       x-transition:leave="transition ease-in duration-100"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0"
+       style="display: none;">
+    <i :data-lucide="toastType === 'success' ? 'check-circle' : 'alert-circle'" class="w-4 h-4"></i>
+    <span x-text="toastMessage"></span>
   </div>
 </div>

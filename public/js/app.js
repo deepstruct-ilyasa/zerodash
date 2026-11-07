@@ -42,8 +42,10 @@ document.addEventListener('alpine:init', () => {
     instances: [],
     networks: [],
     members: [],
+    peers: [],
     routerInterfaces: [],
     logs: [],
+    trafficData: {},
 
     // Form Instance State (Winbox Style with multi-interface array)
     instanceForm: {
@@ -143,13 +145,15 @@ document.addEventListener('alpine:init', () => {
     },
 
     async fetchData(silent = false) {
-      if (!silent) this.addLog('GET', '/api/controller/networks, members, instances & interfaces');
+      if (!silent) this.addLog('GET', '/api/controller/networks, members, instances, interfaces, peers & traffic-stats');
       try {
-        const [netRes, memRes, instRes, ifaceRes] = await Promise.allSettled([
+        const [netRes, memRes, instRes, ifaceRes, peerRes, trafficRes] = await Promise.allSettled([
           fetch('/api/controller/networks').then(r => r.json()),
           fetch('/api/controller/members').then(r => r.json()),
           fetch('/api/controller/instances').then(r => r.json()),
-          fetch('/api/router/interfaces').then(r => r.json()) // Sesuaikan endpoint router interfaces kawan jika ada
+          fetch('/api/router/interfaces').then(r => r.json()),
+          fetch('/api/controller/peers').then(r => r.json()),
+          fetch('/api/controller/traffic-stats').then(r => r.json())
         ]);
 
         if (netRes.status === 'fulfilled' && netRes.value.success) {
@@ -163,6 +167,15 @@ document.addEventListener('alpine:init', () => {
         }
         if (ifaceRes.status === 'fulfilled' && ifaceRes.value.success) {
           this.routerInterfaces = ifaceRes.value.data || [];
+        }
+        if (peerRes.status === 'fulfilled' && peerRes.value.success) {
+          this.peers = peerRes.value.data || [];
+        }
+        if (trafficRes.status === 'fulfilled' && trafficRes.value.success) {
+          this.trafficData = trafficRes.value.data || {};
+        }
+        if (typeof window.initAllTopologies === 'function' && this.networks.length > 0) {
+          window.initAllTopologies(this.networks, this.members, this.peers, this.trafficData, this.parseBool.bind(this));
         }
       } catch (err) {
         if (!silent) this.addLog('ERROR', 'Gagal sync data: ' + err.message);
@@ -790,6 +803,8 @@ document.addEventListener('alpine:init', () => {
 
     async toggleAuth(id, currentAuth) {
       const nextState = !this.parseBool(currentAuth);
+      const actionText = nextState ? 'di-Authorize' : 'di-Revoke';
+      
       this.addLog('PATCH', `/api/controller/members/${id} (authorized=${nextState})`);
       try {
         const res = await fetch(`/api/controller/members/${encodeURIComponent(id)}`, {
@@ -798,13 +813,19 @@ document.addEventListener('alpine:init', () => {
           body: JSON.stringify({ authorized: nextState })
         });
         const result = await res.json();
+        
         if (result.success) {
-          this.fetchData();
+          // Tampilkan notifikasi keberhasilan di pojok layar
+          this.triggerToast(`Otorisasi member berhasil ${actionText}!`, 'success');
+          
+          // Fetch data terbaru dan render ulang ikon setelah data dimuat
+          await this.fetchData();
+          setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
         } else {
-          alert('Gagal ubah otorisasi: ' + result.message);
+          this.triggerToast(`Gagal ubah otorisasi: ${result.message}`, 'error');
         }
       } catch (e) {
-        alert('Error otorisasi member');
+        this.triggerToast('Error saat menghubungi server otorisasi.', 'error');
       }
     },
 

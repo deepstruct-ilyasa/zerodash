@@ -2,3 +2,5 @@
 
 @source "../../views";
 @source "../";
+
+@custom-variant dark (&:is(.dark *));

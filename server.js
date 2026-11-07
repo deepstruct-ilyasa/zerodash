@@ -45,13 +45,11 @@ app.use(session({
 // ==========================================
 // 2. PUBLIC ROUTES (Tanpa Login)
 // ==========================================
-// Mengatur rute /login dan /logout (tidak boleh diproteksi agar user bisa masuk)
 app.use('/', authRoutes);
 
 // ==========================================
 // 3. MIDDLEWARE PROTEKSI GLOBAL
 // ==========================================
-// Semua rute di bawah baris ini otomatis diblokir jika user belum login
 app.use(requireAuth);
 
 app.use((req, res, next) => {
@@ -64,7 +62,6 @@ app.use((req, res, next) => {
 // ==========================================
 // 4. PRIVATE / PROTECTED ROUTES
 // ==========================================
-// Rute API Backend
 app.use(topologyRoute(db));
 app.use('/api', apiRoutes);
 app.use('/api/remote', remoteApi);
@@ -77,7 +74,97 @@ app.get('/', (req, res) => {
 });
 
 // ==========================================
-// 5. SERVER LISTENER
+// BACKGROUND TRAFFIC FLOW LISTENER (DYNAMIC SUBNET)
+// ==========================================
+const dgram = require('dgram');
+
+global.trafficStats = {}; 
+let rawTrafficCache = {}; 
+// Cache daftar IP valid milik member yang didapat dari router secara berkala
+let validMemberIps = new Set(); 
+
+const udpServer = dgram.createSocket('udp4');
+
+udpServer.on('error', (err) => {
+    console.error(`Traffic Flow UDP Error:\n${err.stack}`);
+    udpServer.close();
+});
+
+// Fungsi bantu untuk mendaftarkan IP member secara dinamis dari file rute lain atau API
+global.updateValidMemberIps = function(memberList) {
+    validMemberIps.clear();
+    (memberList || []).forEach(m => {
+        const ip = (m['ip-address'] || m.ip || '').trim();
+        if (ip) validMemberIps.add(ip);
+    });
+};
+
+udpServer.on('message', (msg, rinfo) => {
+    try {
+        const version = msg.readUInt16BE(0);
+        const count = msg.readUInt16BE(2);
+
+        console.log(`📥 NetFlow Versi: ${version}, Jumlah Record: ${count}`);
+
+        if (version === 5) {
+            for (let i = 0; i < count; i++) {
+                const offset = 24 + (i * 48);
+                if (offset + 48 <= msg.length) {
+                    const srcIp = [msg[offset], msg[offset+1], msg[offset+2], msg[offset+3]].join('.');
+                    const dstIp = [msg[offset+4], msg[offset+5], msg[offset+6], msg[offset+7]].join('.');
+                    const bytes = msg.readUInt32BE(offset + 16);
+
+                    console.log(`   🔍 Flow Record [${i+1}] -> Src: ${srcIp} | Dst: ${dstIp} | Bytes: ${bytes}`);
+
+                    if (dstIp.endsWith('.255') || dstIp === '255.255.255.255') continue;
+
+                    // Cek apakah terdaftar di validMemberIps, atau untuk sementara kita tampung semua IP yang masuk dulu
+                    if (validMemberIps.size === 0 || validMemberIps.has(srcIp)) {
+                        if (!rawTrafficCache[srcIp]) rawTrafficCache[srcIp] = { upload: 0, download: 0 };
+                        rawTrafficCache[srcIp].upload += bytes;
+                    }
+
+                    if (validMemberIps.size === 0 || validMemberIps.has(dstIp)) {
+                        if (!rawTrafficCache[dstIp]) rawTrafficCache[dstIp] = { upload: 0, download: 0 };
+                        rawTrafficCache[dstIp].download += bytes;
+                    }
+                }
+            }
+        } else {
+            console.log(`⚠️ Peringatan: MikroTik mengirim NetFlow Versi ${version}, tetapi parser memproses Versi 5!`);
+        }
+    } catch (e) {
+        console.error('❌ Error parsing NetFlow packet:', e.message);
+    }
+});
+
+function formatBandwidth(bytes) {
+    const bps = (bytes * 8) / 5; 
+    if (bps === 0) return '0 Kbps';
+    if (bps < 1000) return bps.toFixed(1) + ' bps'; // Tampilkan bps jika kecil
+    if (bps < 1000000) return (bps / 1000).toFixed(2) + ' Kbps';
+    return (bps / 1000000).toFixed(2) + ' Mbps';
+}
+
+setInterval(() => {
+    const ips = Object.keys(rawTrafficCache);
+    ips.forEach(ip => {
+        global.trafficStats[ip] = {
+            uploadRaw: rawTrafficCache[ip].upload,
+            downloadRaw: rawTrafficCache[ip].download,
+            uploadFormatted: formatBandwidth(rawTrafficCache[ip].upload),
+            downloadFormatted: formatBandwidth(rawTrafficCache[ip].download)
+        };
+    });
+    rawTrafficCache = {}; 
+}, 5000);
+
+udpServer.bind(2055, () => {
+    console.log(`📡 Traffic Flow Listener aktif di UDP Port 2055 (Mode Dinamis)`);
+});
+
+// ==========================================
+// 6. SERVER LISTENER
 // ==========================================
 app.listen(PORT, () => {
   console.log(`================================================`);
