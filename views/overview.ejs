@@ -199,22 +199,22 @@ window.initAllTopologies = async function(networks, members, peersData, trafficD
                     <div style="display: grid; grid-template-columns: 1.3fr 1.7fr; gap: 10px;">
                         <div style="background: ${theme.boxBg}; border: 1px solid ${theme.boxBorder}; padding: 8px 10px; border-radius: 10px; font-family: monospace; display: flex; flex-direction: column; justify-content: center;">
                             <span style="color: ${theme.mutedText}; display: block; font-size: 8.5px; font-weight: 700; margin-bottom: 3px; letter-spacing: 0.5px;">SUBNET / RANGE</span>
-                            <strong style="color: #0284c7; font-size: 11px; font-weight: 700;" title="${subnetRange}">${subnetRange || 'Unassigned'}</strong>
+                            <strong style="color: #0284c7; font-size: 14px; font-weight: 700;" title="${subnetRange}">${subnetRange || 'Unassigned'}</strong>
                         </div>
                         <div style="background: ${theme.boxBg}; border: 1px solid ${theme.boxBorder}; padding: 8px 10px; border-radius: 10px; font-family: monospace; display: flex; flex-direction: column; justify-content: center;">
                             <span style="color: ${theme.mutedText}; display: block; font-size: 8.5px; font-weight: 700; margin-bottom: 5px; letter-spacing: 0.5px;">MEMBERS OVERVIEW (${memberCount} Total)</span>
                             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center;">
                                 <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 3px 2px;">
                                     <div style="font-size: 8px; color: #10b981; font-weight: 700;">ACTIVE</div>
-                                    <div style="font-size: 12px; color: #10b981; font-weight: 800;">${activeCount}</div>
+                                    <div style="font-size: 14px; color: #10b981; font-weight: 800;">${activeCount}</div>
                                 </div>
                                 <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; padding: 3px 2px;">
                                     <div style="font-size: 8px; color: #f59e0b; font-weight: 700;">PENDING</div>
-                                    <div style="font-size: 12px; color: #f59e0b; font-weight: 800;">${pendingCount}</div>
+                                    <div style="font-size: 14px; color: #f59e0b; font-weight: 800;">${pendingCount}</div>
                                 </div>
                                 <div style="background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: 6px; padding: 3px 2px;">
                                     <div style="font-size: 8px; color: #f43f5e; font-weight: 700;">OFFLINE</div>
-                                    <div style="font-size: 12px; color: #f43f5e; font-weight: 800;">${offlineCount}</div>
+                                    <div style="font-size: 14px; color: #f43f5e; font-weight: 800;">${offlineCount}</div>
                                 </div>
                             </div>
                         </div>
