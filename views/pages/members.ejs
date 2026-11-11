@@ -1,14 +1,28 @@
 <div x-show="activeTab === 'members'" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
-  <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+  <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
     <div>
       <h3 class="text-sm font-bold text-slate-900 dark:text-slate-200">ZeroTier Controller Members</h3>
       <p class="text-xs text-slate-400">Kelola otorisasi, virtual IP, dan device member controller.</p>
     </div>
-    <div x-show="window.USER_ROLE === 'admin'">
-      <button @click="openAddMemberModal()" class="px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold shadow flex items-center space-x-1.5 transition">
-        <i data-lucide="user-plus" class="w-4 h-4"></i>
-        <span>Tambah Member</span>
-      </button>
+    
+    <!-- DROPDOWN FILTER BERDASARKAN CONTROLLER -->
+    <div class="flex items-center space-x-2 w-full sm:w-auto">
+      <div class="flex-1 sm:flex-initial">
+        <label class="text-[10px] text-slate-400 block mb-1 uppercase font-semibold">Pilih Controller :</label>
+        <select x-model="selectedControllerFilter" class="w-full sm:w-48 bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-cyan-500">
+          <option value="all">-- Semua Controller --</option>
+          <template x-for="ctrl in availableControllers" :key="ctrl">
+            <option :value="ctrl" x-text="ctrl"></option>
+          </template>
+        </select>
+      </div>
+
+      <div x-show="window.USER_ROLE === 'admin'">
+        <button @click="openAddMemberModal()" class="px-3.5 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold shadow flex items-center space-x-1.5 transition whitespace-nowrap">
+          <i data-lucide="user-plus" class="w-4 h-4"></i>
+          <span>Tambah Member</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -26,7 +40,8 @@
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
-        <template x-for="m in members" :key="m['.id'] || m['zt-address']">
+        <!-- Menggunakan filteredMembers untuk menyaring berdasarkan dropdown -->
+        <template x-for="m in filteredMembers" :key="m['.id'] || m['zt-address']">
           <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
             <td class="p-3.5 font-bold text-slate-900 dark:text-slate-100" x-text="m.name || '-' "></td>
             <td class="p-3.5 font-mono text-slate-400" x-text="m.network || '-'"></td>
@@ -56,9 +71,13 @@
             </td>
           </tr>
         </template>
+        <template x-if="filteredMembers.length === 0">
+          <tr><td colspan="7" class="py-8 text-center text-slate-500 italic">Tidak ada member ZeroTier pada controller ini.</td></tr>
+        </template>
       </tbody>
     </table>
   </div>
+
   <!-- TOAST NOTIFICATION -->
   <div x-show="showToast" 
        class="fixed bottom-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold flex items-center space-x-3 transition-all"

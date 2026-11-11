@@ -46,6 +46,7 @@ document.addEventListener('alpine:init', () => {
     routerInterfaces: [],
     logs: [],
     trafficData: {},
+    selectedControllerFilter: 'all',
 
     // Form Instance State (Winbox Style with multi-interface array)
     instanceForm: {
@@ -142,6 +143,18 @@ document.addEventListener('alpine:init', () => {
       if (typeof val === 'boolean') return val;
       if (typeof val === 'string') return val.toLowerCase() === 'true' || val.toLowerCase() === 'yes';
       return false;
+    },
+
+    get availableControllers() {
+      const controllers = this.members.map(m => m.network || m.controller).filter(Boolean);
+      return [...new Set(controllers)];
+    },
+
+    get filteredMembers() {
+      if (this.selectedControllerFilter === 'all') {
+        return this.members;
+      }
+      return this.members.filter(m => (m.network || m.controller) === this.selectedControllerFilter);
     },
 
     async fetchData(silent = false) {
