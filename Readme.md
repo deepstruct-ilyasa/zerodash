@@ -59,7 +59,7 @@ Pastikan Anda memiliki **Node.js** terinstal di server/komputer Anda.
 Berikut adalah penjelasan detail fungsi dari setiap menu yang ada di *sidebar* ZeroDash dan cara penggunaannya:
 
 ### 1. Overview (Topologi Jaringan)
-![Overview Topology](./image_14fa70.jpg)
+![Overview Topology](./public/img/screenshoots/overview.png)
 * **Fungsi:** Menyajikan visualisasi *Network Topology* secara *real-time*. Anda dapat melihat hubungan antar Master Controller dengan seluruh perangkat (*node*) yang terhubung, lengkap dengan indikator status aktif/nonaktif dan metrik ringkas.
 * **Cara Pakai:** Cukup buka menu ini untuk melakukan pemantauan grafis. Node berwarna hijau menandakan koneksi sehat/aktif, sementara merah menandakan *offline* atau *connection lost*.
 
@@ -67,17 +67,17 @@ Berikut adalah penjelasan detail fungsi dari setiap menu yang ada di *sidebar* Z
 Menu ini memiliki dua sub-tab utama: **Controller Networks** dan **ZeroTier Instances**.
 
 #### A. Controller Networks
-![Controller Networks](./image_14fad2.png)
+![Controller Networks](./public/img/screenshoots/controller.png)
 * **Fungsi:** Tempat utama membuat jaringan ZeroTier. 
 * **Cara Pakai:** Klik **+ Tambah Controller** untuk membuat jaringan baru. Tentukan *IP Range* (misal: `10.10.10.1-10.10.10.30`). Anda bisa menyalin *Network ID* dengan mengeklik ikon *copy*, atau mengeklik ikon **QR Code** untuk menampilkannya di layar dan mengunduhnya untuk perangkat *mobile*.
 
 #### B. ZeroTier Instances
-![ZeroTier Instances](./image_14fa39.png)
+![ZeroTier Instances](./public/img/screenshoots/instance.png)
 * **Fungsi:** Mengelola layanan perangkat lunak (*daemon*) ZeroTier di router Anda.
 * **Cara Pakai:** Di tab ini, Anda bisa menambah instance baru, menentukan *Port* UDP (default: `9993`), dan mengatur *interfaces* mana saja yang diizinkan untuk lalu lintas ZeroTier.
 
 ### 3. Controller Members
-![Controller Members](./image_14fa15.png)
+![Controller Members](./public/img/screenshoots/member.png)
 * **Fungsi:** Mengontrol siapa saja yang boleh masuk ke jaringan virtual Anda.
 * **Cara Pakai:** 
   * Gunakan **Dropdown Filter** di pojok kanan atas untuk memilah perangkat berdasarkan jaringan/controller tertentu.
@@ -85,7 +85,7 @@ Menu ini memiliki dua sub-tab utama: **Controller Networks** dan **ZeroTier Inst
   * Klik ikon *Edit* untuk memberikan **Virtual IP Address** statis kepada member agar mudah diingat.
 
 ### 4. Controller Routes
-![Controller Routes](./image_14f9f4.png)
+![Controller Routes](./public/img/screenshoots/route.png)
 * **Fungsi:** Mendorong (*push*) aturan rute ke semua member agar mereka tahu cara mencapai *subnet* LAN di belakang router atau perangkat tertentu.
 * **Cara Pakai:** 
   1. Pilih *Controller Network* dari dropdown di atas.
@@ -93,23 +93,23 @@ Menu ini memiliki dua sub-tab utama: **Controller Networks** dan **ZeroTier Inst
   3. Masukkan *Destination Subnet* (misal: `192.168.50.0/24`) dan *Gateway* (IP Virtual ZT dari router yang memiliki jaringan tersebut).
 
 ### 5. Remote Router Tool
-![Remote Router Tool](./image_14f730.png)
+![Remote Router Tool](./public/img/screenshoots/remote-router.png)
 * **Fungsi:** Utilitas canggih untuk me-remote router MikroTik cabang. Sangat berguna jika Anda ingin mengecek antarmuka ZeroTier atau status Peer di router cabang tanpa mengubah setelan utama dasbor.
 * **Cara Pakai:** Masukkan IP, *port* API, beserta username & password router cabang Anda, lalu klik **Hubungkan**. Data *Interfaces*, *Instance*, dan *Peer* dari router cabang tersebut akan langsung ditarik dan bisa Anda kelola dari halaman ini.
 
 ### 6. Master Router (Daftar Router Tersimpan)
-![Master Router List](./image_14f70e.png)
+![Master Router List](./public/img/screenshoots/router-list.png)
 * **Fungsi:** Buku alamat (*address book*) untuk menyimpan kredensial router-router yang sering Anda akses.
 * **Cara Pakai:** Tambahkan data router cabang atau router klien Anda di sini. Data yang disimpan di sini dapat dipanggil dengan cepat melalui fitur *dropdown* opsional pada menu **Remote Router Tool** agar Anda tidak perlu mengetik ulang kata sandi berkali-kali.
 
 ### 7. Settings (Konfigurasi Inti Dasbor)
-![Settings & Traffic Flow](./image_14f6ee.png)
+![Settings & Traffic Flow](./public/img/screenshoots/setting.png)
 Halaman ini adalah pusat konfigurasi komunikasi backend aplikasi Anda. Terdapat dua bagian:
 * **Konfigurasi Master Controller Router:** Masukkan kredensial (IP, API Port, User, Pass) dari router MikroTik utama Anda yang bertindak sebagai *Master ZeroTier Controller*. Klik **Simpan Kredensial** agar seluruh dasbor bisa berfungsi.
 * **Traffic Flow Settings (General & Targets):** Aktifkan sakelar *Enabled* untuk menyalakan fitur pelaporan trafik IPFIX. Pindah ke tab **Targets** jika Anda memiliki server pemantau jaringan (seperti PRTG atau NetFlow Analyzer) dan masukkan IP-nya ke sana.
 
 ### 8. Manajemen Akun (Users)
-![User Management](./image_14f697.png)
+![User Management](./public/img/screenshoots/user.png)
 * **Fungsi:** Membatasi siapa saja yang bisa mengubah konfigurasi jaringan.
 * **Cara Pakai:** Anda bisa membuat akun dengan hak akses `ADMIN` (dapat menambah/menghapus konfigurasi) atau `READ_ONLY` (hanya bisa memantau/melihat data tanpa bisa mengubah pengaturan).
 
@@ -118,6 +118,3 @@ Halaman ini adalah pusat konfigurasi komunikasi backend aplikasi Anda. Terdapat 
 ## 🤝 Kontribusi
 
 Kami sangat mengapresiasi kontribusi Anda! Jika Anda menemukan kutu (*bug*), memiliki ide fitur baru, atau ingin memperbaiki dokumentasi, silakan buka *Issue* atau kirimkan *Pull Request*.
-
-## 📜 Lisensi
-ZeroDash dirilis di bawah [MIT License](LICENSE).
