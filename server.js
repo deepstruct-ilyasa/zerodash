@@ -62,11 +62,32 @@ app.use((req, res, next) => {
 // ==========================================
 // 4. PRIVATE / PROTECTED ROUTES
 // ==========================================
-app.use(topologyRoute(db));
+// Posisikan topologyRoute agar endpoint /api/topology/positions terbaca sempurna
+app.use('/api', topologyRoute(db));
 app.use('/api', apiRoutes);
 app.use('/api/remote', remoteApi);
 app.use('/api/master-routers', routerMaster);
 app.use('/api/users', userRoutes);
+
+// ==========================================
+// TAMBAHAN ENDPOINT LIVE DATA UNTUK CYTOSCAPE AUTO-REFRESH
+// ==========================================
+app.get('/api/overview/live-data', requireAuth, async (req, res) => {
+  try {
+    const routerId = req.session.routerId;
+    
+    // Mengambil cache data aktif yang sedang berjalan di background server
+    res.json({
+      success: true,
+      networks: global.activeNetworksCache?.[routerId] || [],
+      members: global.activeMembersCache?.[routerId] || [],
+      peers: global.activePeersCache?.[routerId] || [],
+      trafficData: global.trafficStats || {}
+    });
+  } catch (e) {
+    res.json({ success: false, error: e.message });
+  }
+});
 
 // Rute Halaman Dashboard Utama
 app.get('/', (req, res) => {
@@ -80,7 +101,6 @@ const dgram = require('dgram');
 
 global.trafficStats = {}; 
 let rawTrafficCache = {}; 
-// Cache daftar IP valid milik member yang didapat dari router secara berkala
 let validMemberIps = new Set(); 
 
 const udpServer = dgram.createSocket('udp4');
@@ -90,7 +110,6 @@ udpServer.on('error', (err) => {
     udpServer.close();
 });
 
-// Fungsi bantu untuk mendaftarkan IP member secara dinamis dari file rute lain atau API
 global.updateValidMemberIps = function(memberList) {
     validMemberIps.clear();
     (memberList || []).forEach(m => {
@@ -104,8 +123,6 @@ udpServer.on('message', (msg, rinfo) => {
         const version = msg.readUInt16BE(0);
         const count = msg.readUInt16BE(2);
 
-        console.log(`📥 NetFlow Versi: ${version}, Jumlah Record: ${count}`);
-
         if (version === 5) {
             for (let i = 0; i < count; i++) {
                 const offset = 24 + (i * 48);
@@ -114,11 +131,8 @@ udpServer.on('message', (msg, rinfo) => {
                     const dstIp = [msg[offset+4], msg[offset+5], msg[offset+6], msg[offset+7]].join('.');
                     const bytes = msg.readUInt32BE(offset + 16);
 
-                    console.log(`   🔍 Flow Record [${i+1}] -> Src: ${srcIp} | Dst: ${dstIp} | Bytes: ${bytes}`);
-
                     if (dstIp.endsWith('.255') || dstIp === '255.255.255.255') continue;
 
-                    // Cek apakah terdaftar di validMemberIps, atau untuk sementara kita tampung semua IP yang masuk dulu
                     if (validMemberIps.size === 0 || validMemberIps.has(srcIp)) {
                         if (!rawTrafficCache[srcIp]) rawTrafficCache[srcIp] = { upload: 0, download: 0 };
                         rawTrafficCache[srcIp].upload += bytes;
@@ -130,8 +144,6 @@ udpServer.on('message', (msg, rinfo) => {
                     }
                 }
             }
-        } else {
-            console.log(`⚠️ Peringatan: MikroTik mengirim NetFlow Versi ${version}, tetapi parser memproses Versi 5!`);
         }
     } catch (e) {
         console.error('❌ Error parsing NetFlow packet:', e.message);
@@ -141,21 +153,25 @@ udpServer.on('message', (msg, rinfo) => {
 function formatBandwidth(bytes) {
     const bps = (bytes * 8) / 5; 
     if (bps === 0) return '0 Kbps';
-    if (bps < 1000) return bps.toFixed(1) + ' bps'; // Tampilkan bps jika kecil
+    if (bps < 1000) return bps.toFixed(1) + ' bps';
     if (bps < 1000000) return (bps / 1000).toFixed(2) + ' Kbps';
     return (bps / 1000000).toFixed(2) + ' Mbps';
 }
 
 setInterval(() => {
+    const freshTrafficStats = {}; 
+    
     const ips = Object.keys(rawTrafficCache);
     ips.forEach(ip => {
-        global.trafficStats[ip] = {
+        freshTrafficStats[ip] = {
             uploadRaw: rawTrafficCache[ip].upload,
-            downloadRaw: rawTrafficCache[ip].download,
+            downloadRaw: rawTrafficCache[ip].upload,
             uploadFormatted: formatBandwidth(rawTrafficCache[ip].upload),
             downloadFormatted: formatBandwidth(rawTrafficCache[ip].download)
         };
     });
+    
+    global.trafficStats = freshTrafficStats; 
     rawTrafficCache = {}; 
 }, 5000);
 

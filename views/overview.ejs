@@ -1,24 +1,20 @@
 <div x-show="activeTab === 'overview'" class="space-y-6 pt-4" x-cloak
      x-init="
-        $watch('networks', (val) => { 
-            if(val && val.length > 0) {
-                $nextTick(() => {
-                    window.initAllTopologies(networks, members, peers, trafficData, parseBool);
-                });
-            } 
-        });
-
-        $watch('darkMode', () => {
-            if (networks && networks.length > 0) {
-                $nextTick(() => {
-                    window.initAllTopologies(networks, members, peers, trafficData, parseBool);
-                });
-            }
-        });
-
         $nextTick(() => {
             if (networks && networks.length > 0) {
                 window.initAllTopologies(networks, members, peers, trafficData, parseBool);
+            }
+        });
+
+        $watch('networks', () => {
+            if (window.activeTab === 'overview' && networks && networks.length > 0) {
+                $nextTick(() => window.initAllTopologies(networks, members, peers, trafficData, parseBool));
+            }
+        });
+
+        $watch('darkMode', () => {
+            if (window.activeTab === 'overview' && networks && networks.length > 0) {
+                $nextTick(() => window.initAllTopologies(networks, members, peers, trafficData, parseBool));
             }
         });
      ">
@@ -27,7 +23,7 @@
   <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition-colors">
     <div>
       <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">Network Topology & System Overview</h3>
-      <p class="text-xs text-slate-400 mt-0.5">Enterprise Topology dengan Server-Side Global Position Sync & Full ID Display.</p>
+      <p class="text-xs text-slate-400 mt-0.5">High-Performance Enterprise Topology with Real-Time Auto-Refresh & Dynamic Theme.</p>
     </div>
   </div>
 
@@ -36,41 +32,42 @@
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm transition-colors">
       <span class="text-xs text-slate-400 uppercase font-semibold">Controller</span>
       <div class="flex items-center justify-between mt-2">
-        <h4 class="text-xl font-bold text-slate-800 dark:text-slate-100" x-text="networks.length">0</h4>
+        <h4 class="text-2xl font-bold text-slate-800 dark:text-slate-100" x-text="networks.length">0</h4>
         <i data-lucide="globe" class="w-5 h-5 text-cyan-500"></i>
       </div>
     </div>
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm transition-colors">
       <span class="text-xs text-slate-400 uppercase font-semibold">Instance</span>
       <div class="flex items-center justify-between mt-2">
-        <h4 class="text-xl font-bold text-slate-800 dark:text-slate-100" x-text="instances.length">0</h4>
+        <h4 class="text-2xl font-bold text-slate-800 dark:text-slate-100" x-text="instances.length">0</h4>
         <i data-lucide="notebook-tabs" class="w-5 h-5 text-amber-500"></i>
       </div>
     </div>
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm transition-colors">
       <span class="text-xs text-slate-400 uppercase font-semibold">Members</span>
       <div class="flex items-center justify-between mt-2">
-        <h4 class="text-xl font-bold text-slate-800 dark:text-slate-100" x-text="members.length">0</h4>
+        <h4 class="text-2xl font-bold text-slate-800 dark:text-slate-100" x-text="members.length">0</h4>
         <i data-lucide="users" class="w-5 h-5 text-emerald-500"></i>
       </div>
     </div>
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm transition-colors">
       <span class="text-xs text-slate-400 uppercase font-semibold">Controller Status</span>
       <div class="flex items-center justify-between mt-2">
-        <h4 class="text-xl font-bold text-emerald-600 dark:text-emerald-400" x-text="networks.length > 0 ? 'Active Hub' : 'Standby'">- - -</h4>
+        <h4 class="text-2xl font-bold text-emerald-600 dark:text-emerald-400" x-text="networks.length > 0 ? 'Active Hub' : 'Standby'">- - -</h4>
         <i data-lucide="shield-check" class="w-5 h-5 text-indigo-500"></i>
       </div>
     </div>
   </div>
 
-  <!-- 3. CONTAINER UTAMA: MULTI-CANVAS TERPISAH -->
+  <!-- 3. CONTAINER UTAMA CYTOSCAPE -->
   <div class="space-y-8 mt-6">
     <template x-for="net in networks" :key="net['.id'] || net.network">
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm transition-colors">
         <div class="relative w-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#020617] transition-colors mt-2">
           <div class="absolute inset-0 bg-[linear-gradient(to_right,#cbd5e1_1px,transparent_1px),linear-gradient(to_bottom,#cbd5e1_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:2rem_2rem] pointer-events-none opacity-40 transition-colors"></div>
           
-          <div :id="'canvas_' + String(net['.id'] || net.network).replace(/[^a-zA-Z0-9]/g, '')" class="w-full h-[650px] relative outline-none cursor-grab active:cursor-grabbing"></div>
+          <!-- Wadah Kanvas Cytoscape -->
+          <div :id="'cy_' + String(net['.id'] || net.network).replace(/[^a-zA-Z0-9]/g, '')" class="w-full h-[650px] relative outline-none cursor-grab active:cursor-grabbing"></div>
         </div>
       </div>
     </template>
@@ -83,46 +80,45 @@
   </div>
 </div>
 
-<script>
-if (!window.visNetworksRegistry) {
-    window.visNetworksRegistry = {};
-}
+<!-- Load CDN Cytoscape.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
 
-if (!window.visDatasetsRegistry) {
-    window.visDatasetsRegistry = {};
+<script>
+if (!window.cyInstances) {
+    window.cyInstances = {};
 }
 
 async function fetchServerPositions() {
     try {
         const res = await fetch('/api/topology/positions');
-        if (res.ok) {
-            return await res.json();
-        }
+        if (res.ok) return await res.json();
     } catch (e) {}
     return {};
 }
 
 async function saveServerPositions(positionsObj) {
     try {
-        await fetch('/api/topology/positions', {
+        const res = await fetch('/api/topology/positions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(positionsObj)
         });
-    } catch (e) {}
+        const json = await res.json();
+        console.log('Save Position Response:', json);
+    } catch (e) {
+        console.error('Error saving position:', e);
+    }
 }
 
 window.initAllTopologies = async function(networks, members, peersData, trafficData, parseBoolHelper) {
-    if (typeof vis === 'undefined') return;
+    if (typeof cytoscape === 'undefined') return;
 
     let activePeers = peersData || [];
     if (activePeers.length === 0) {
         try {
             const res = await fetch('/api/controller/peers');
             const json = await res.json();
-            if (json.success) {
-                activePeers = json.data || [];
-            }
+            if (json.success) activePeers = json.data || [];
         } catch (e) {}
     }
 
@@ -135,424 +131,298 @@ window.initAllTopologies = async function(networks, members, peersData, trafficD
                        document.body.classList.contains('dark') || 
                        document.documentElement.getAttribute('data-theme') === 'dark';
 
-    const theme = isDarkMode ? {
-        cardBg: 'linear-gradient(135deg, #0f172a 0%, #090d16 100%)',
-        textColor: '#f8fafc',
-        subText: '#94a3b8',
-        mutedText: '#64748b',
-        boxBg: 'rgba(255, 255, 255, 0.04)',
-        boxBorder: 'rgba(255, 255, 255, 0.08)',
-        divider: 'rgba(255, 255, 255, 0.08)'
-    } : {
-        cardBg: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-        textColor: '#0f172a',
-        subText: '#475569',
-        mutedText: '#94a3b8',
-        boxBg: 'rgba(0, 0, 0, 0.03)',
-        boxBorder: 'rgba(0, 0, 0, 0.08)',
-        divider: 'rgba(0, 0, 0, 0.1)'
-    };
-
+    // Tarik posisi dari database
     const storedPositions = await fetchServerPositions();
 
     const parseMikrotikTime = (timeStr) => {
         if (!timeStr || timeStr.toLowerCase().includes('offline')) return 999999;
         if (timeStr.toLowerCase() === 'active') return 0;
-        
         let totalSeconds = 0;
         const days = timeStr.match(/(\d+)d/);
         const hours = timeStr.match(/(\d+)h/);
         const mins = timeStr.match(/(\d+)m(?!s)/); 
         const secs = timeStr.match(/(\d+)s/);
-
         if (days) totalSeconds += parseInt(days[1]) * 86400;
         if (hours) totalSeconds += parseInt(hours[1]) * 3600;
         if (mins) totalSeconds += parseInt(mins[1]) * 60;
         if (secs) totalSeconds += parseInt(secs[1]);
-
         return totalSeconds;
     };
 
-    const getControllerSVG = (name, id, instance, mtu, isPrivate, subnetRange, memberCount, activeCount, pendingCount, offlineCount) => {
-        const modeText = isPrivate ? 'PRIVATE NETWORK' : 'PUBLIC NETWORK';
-        const modeColor = isPrivate ? '#c084fc' : '#0ea5e9'; 
-        const modeBg = isPrivate ? 'rgba(192, 132, 252, 0.15)' : 'rgba(14, 165, 233, 0.15)';
+    setTimeout(() => {
+        (networks || []).forEach((net) => {
+            const netKey = String(net['.id'] || net.network).replace(/[^a-zA-Z0-9]/g, '');
+            const containerId = 'cy_' + netKey;
+            const container = document.getElementById(containerId);
+            if (!container) return;
 
-        const rawSvg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="520" height="205">
-            <foreignObject x="0" y="0" width="100%" height="100%">
-                <div xmlns="http://www.w3.org/1999/xhtml" style="background: ${theme.cardBg}; border: 2px solid #06b6d4; border-radius: 16px; padding: 16px; font-family: ui-sans-serif, system-ui, sans-serif; color: ${theme.textColor}; width: 520px; height: 205px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 14px 35px -5px rgba(6, 182, 212, 0.25), inset 0 0 25px rgba(6, 182, 212, 0.1); backdrop-filter: blur(12px);">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <div style="display: flex; gap: 12px; align-items: center;">
-                            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); display: flex; align-items: center; justify-content: center; color: #0891b2;">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>
-                            </div>
-                            <div style="line-height: 1.3;">
-                                <div style="font-size: 16px; font-weight: 800; color: ${theme.textColor}; letter-spacing: 0.5px;">${name}</div>
-                                <div style="font-size: 11.5px; font-family: monospace; font-weight: 700; color: #0891b2; margin-top: 2px;">ID: ${id}</div>
-                            </div>
-                        </div>
-                        <div style="border: 1px solid ${modeColor}; background: ${modeBg}; color: ${modeColor}; padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px;">
-                            ${modeText}
-                        </div>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1.3fr 1.7fr; gap: 10px;">
-                        <div style="background: ${theme.boxBg}; border: 1px solid ${theme.boxBorder}; padding: 8px 10px; border-radius: 10px; font-family: monospace; display: flex; flex-direction: column; justify-content: center;">
-                            <span style="color: ${theme.mutedText}; display: block; font-size: 8.5px; font-weight: 700; margin-bottom: 3px; letter-spacing: 0.5px;">SUBNET / RANGE</span>
-                            <strong style="color: #0284c7; font-size: 14px; font-weight: 700;" title="${subnetRange}">${subnetRange || 'Unassigned'}</strong>
-                        </div>
-                        <div style="background: ${theme.boxBg}; border: 1px solid ${theme.boxBorder}; padding: 8px 10px; border-radius: 10px; font-family: monospace; display: flex; flex-direction: column; justify-content: center;">
-                            <span style="color: ${theme.mutedText}; display: block; font-size: 8.5px; font-weight: 700; margin-bottom: 5px; letter-spacing: 0.5px;">MEMBERS OVERVIEW (${memberCount} Total)</span>
-                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center;">
-                                <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 3px 2px;">
-                                    <div style="font-size: 8px; color: #10b981; font-weight: 700;">ACTIVE</div>
-                                    <div style="font-size: 14px; color: #10b981; font-weight: 800;">${activeCount}</div>
-                                </div>
-                                <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; padding: 3px 2px;">
-                                    <div style="font-size: 8px; color: #f59e0b; font-weight: 700;">PENDING</div>
-                                    <div style="font-size: 14px; color: #f59e0b; font-weight: 800;">${pendingCount}</div>
-                                </div>
-                                <div style="background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: 6px; padding: 3px 2px;">
-                                    <div style="font-size: 8px; color: #f43f5e; font-weight: 700;">OFFLINE</div>
-                                    <div style="font-size: 14px; color: #f43f5e; font-weight: 800;">${offlineCount}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div style="border-top: 1px solid ${theme.divider}; padding-top: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; font-family: monospace; color: ${theme.subText};">
-                        <div>Instance: <strong style="color: ${theme.textColor}; font-weight: 700;">${instance}</strong></div>
-                        <div>MTU: <strong style="color: ${theme.textColor}; font-weight: 700;">${mtu}</strong></div>
-                        <div style="color: #06b6d4; font-weight: 700;">ZT Controller Hub</div>
-                    </div>
-                </div>
-            </foreignObject>
-        </svg>`;
-        return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(rawSvg);
-    };
+            // KUNCI ID PERMANEN: Gunakan Network ID asli yang unik sebagai basis ID Controller
+            const rawNetId = net.network || net['network-id'] || net['.id'] || 'net';
+            const cleanNetId = String(rawNetId).replace(/[^a-zA-Z0-9]/g, '');
+            const ctrlId = 'ctrl_' + cleanNetId;
+            const elements = [];
 
-    const getMemberSVG = (name, ip, id, lastSeenText, latencyText, statusType, trafficObj) => {
-        let borderColor = '#10b981';
-        let badgeText = '#059669';
-        let badgeBg = 'rgba(16,185,129,0.15)';
-        let statusLabel = 'ONLINE';
-        let dotColor = '#10b981';
-        let tunnelText = '● Secure Tunnel Active';
+            const isPrivateNet = checkBool(net.private) || String(net.private) === 'true' || net.private === '*1';
+            const controllerSubnet = net['ip-range'] || net.subnet || net['assigned-address'] || net.address || 'Managed Subnet';
+            const controllerIdText = net.network || net['network-id'] || net['.id'] || '-';
 
-        if (statusType === 'PENDING') {
-            borderColor = '#f59e0b';
-            badgeText = '#d97706';
-            badgeBg = 'rgba(245, 158, 11, 0.15)';
-            statusLabel = 'UNAUTHORIZED';
-            dotColor = '#f59e0b';
-            tunnelText = '▲ Waiting for Authorization';
-        } else if (statusType === 'OFFLINE') {
-            borderColor = '#f43f5e';
-            badgeText = '#e11d48';
-            badgeBg = 'rgba(244, 63, 94, 0.15)';
-            statusLabel = 'OFFLINE';
-            dotColor = '#f43f5e';
-            tunnelText = '○ Connection Lost';
-        }
-
-        const glowColor = borderColor === '#10b981' ? 'rgba(16, 185, 129, 0.25)' : (borderColor === '#f59e0b' ? 'rgba(245, 158, 11, 0.25)' : 'rgba(244, 63, 94, 0.25)');
-
-        const upSpeed = trafficObj && trafficObj.uploadFormatted ? trafficObj.uploadFormatted : '0 bps';
-        const downSpeed = trafficObj && trafficObj.downloadFormatted ? trafficObj.downloadFormatted : '0 bps';
-
-        const rawSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="215">
-            <foreignObject x="0" y="0" width="400" height="215">
-                <div xmlns="http://www.w3.org/1999/xhtml" style="background:${theme.cardBg};border:2px solid ${borderColor};border-radius:16px;padding:14px 16px;font-family:ui-sans-serif,system-ui,sans-serif;color:${theme.textColor};width:400px;height:215px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 12px 30px -5px ${glowColor},inset 0 0 20px ${glowColor};backdrop-filter:blur(12px);">
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                        <div style="display:flex;gap:12px;align-items:center;">
-                            <div style="width:38px;height:38px;border-radius:10px;background:${badgeBg};border:1px solid ${borderColor};display:flex;align-items:center;justify-content:center;color:${badgeText};">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect width="16" height="16" x="4" y="4" rx="2"/>
-                                    <rect width="6" height="6" x="9" y="9" rx="1"/>
-                                    <path d="M9 1v3"/><path d="M15 1v3"/>
-                                    <path d="M9 20v3"/>
-                                    <path d="M15 20v3"/>
-                                    <path d="M1 9h3"/>
-                                    <path d="M1 15h3"/>
-                                    <path d="M20 9h3"/>
-                                    <path d="M20 15h3"/>
-                                </svg>
-                            </div>
-                            <div style="line-height:1.3;">
-                                <div style="font-size:15px;font-weight:800;color:${theme.textColor};text-overflow:ellipsis;white-space:nowrap;overflow:hidden;width:140px;" title="${name}">${name}
-                                </div>
-                                <div style="font-size:12.5px;font-family:monospace;font-weight:700;color:#0891b2;margin-top:2px;">${ip}
-                                </div>
-                            </div>
-                        </div>
-                        <div style="border:1px solid ${borderColor};background:${badgeBg};color:${badgeText};padding:4px 10px;border-radius:6px;font-size:9.5px;font-weight:800;letter-spacing:0.5px;">${statusLabel}
-                        </div>
-                    </div>
-                    <div style="background:${theme.boxBg};border:1px solid ${theme.boxBorder};padding:8px 12px;border-radius:10px;display:grid;grid-template-columns:1.2fr 1.3fr;gap:8px;font-size:11px;font-family:monospace;">
-                        <div style="overflow:hidden;">
-                            <span style="color:${theme.mutedText};display:block;font-size:8.5px;font-weight:700;margin-bottom:2px;">MEMBER ID</span>
-                            <strong style="color:${theme.textColor};font-weight:700;font-size:13px;" title="${id}">${id}</strong>
-                        </div>
-                        <div style="display:flex;flex-direction:column;justify-content:space-between;border-left:1px solid ${theme.divider};padding-left:8px;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;">
-                                <span style="color:${theme.mutedText};font-size:9px;font-weight:700;">LAST SEEN:</span>
-                                <strong style="color:${theme.subText};font-weight:700;font-size:13px;" title="${lastSeenText}">${lastSeenText}</strong>
-                            </div>
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;">
-                                <span style="color:${theme.mutedText};font-size:9px;font-weight:700;">LATENCY:</span>
-                                <div style="display:flex;align-items:center;gap:5px;">
-                                    <div style="width:6px;height:6px;border-radius:50%;background-color:${dotColor};box-shadow:0 0 5px ${dotColor};">
-                                    </div>
-                                    <strong style="color:${theme.subText};font-weight:700;font-size:13px;" title="${latencyText}">${latencyText}</strong>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;align-items:center;padding:0px 4px;font-size:10px;font-family:monospace;">
-                        <div style="display:flex;align-items:center;gap:6px;">
-                            <span style="color:${theme.mutedText};font-weight:700;">Upload:</span>
-                            <strong style="color:#06b6d4;font-size:13px;">${upSpeed}</strong>
-                        </div>
-                        <div style="width:1px;height:14px;background:${theme.divider};"></div>
-                        <div style="display:flex;align-items:center;gap:6px;">
-                            <span style="color:${theme.mutedText};font-weight:700;">Download:</span>
-                            <strong style="color:#10b981;font-size:13px;">${downSpeed}</strong>
-                        </div>
-                    </div>
-                    <div style="border-top:1px solid ${theme.divider};padding-top:6px;display:flex;justify-content:space-between;align-items:center;font-size:10.5px;font-family:monospace;color:${theme.subText};">
-                        <span>ZeroTier Virtual Node</span>
-                        <span style="color:${badgeText};font-weight:700;">${tunnelText}</span>
-                    </div>
-                </div>
-            </foreignObject>
-        </svg>`;
-
-        return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(rawSvg);
-    };
-
-    (networks || []).forEach(net => {
-        const netKey = String(net['.id'] || net.network).replace(/[^a-zA-Z0-9]/g, '');
-        const containerId = 'canvas_' + netKey;
-        
-        const container = document.getElementById(containerId);
-        if (!container) return;
-
-        const ctrlId = 'ctrl_' + netKey;
-        const nodesData = [];
-        const edgesData = [];
-
-        const isPrivateNet = checkBool(net.private) || String(net.private) === 'true' || net.private === '*1';
-        const controllerSubnet = net['ip-range'] || net.subnet || net['assigned-address'] || net.address || net['bridge'] || 'Managed Subnet';
-
-        const networkMembers = (members || []).filter(m => {
-            const netId = net['.id'] || ''; 
-            const netNetwork = net.network || net['network-id'] || ''; 
-            const itemNetwork = m.network || '';
-            return itemNetwork === netId || itemNetwork === net.name || itemNetwork === netNetwork || !itemNetwork;
-        });
-
-        let ctrlPos = storedPositions[ctrlId] || {};
-        
-        const evaluatedMembers = networkMembers.map(m => {
-            const isAuth = checkBool(m.authorized);
-            const lastSeenRaw = m['last-seen'] || 'Active';
-            const secsOffline = parseMikrotikTime(lastSeenRaw);
-            const isOff = String(m.online) === 'false' || 
-                          lastSeenRaw.toLowerCase().includes('offline') || 
-                          (!isAuth && m.online === false) ||
-                          (secsOffline > 15); 
-                          
-            let status = 'ONLINE';
-            if (!isAuth) status = 'PENDING';
-            else if (isOff) status = 'OFFLINE';
-            
-            return { ...m, _calculatedStatus: status, _secsOffline: secsOffline };
-        });
-
-        const activeCount = evaluatedMembers.filter(m => m._calculatedStatus === 'ONLINE').length;
-        const pendingCount = evaluatedMembers.filter(m => m._calculatedStatus === 'PENDING').length;
-        const offlineCount = evaluatedMembers.filter(m => m._calculatedStatus === 'OFFLINE').length;
-
-        const controllerCacheKey = `ctrl_${activeCount}_${pendingCount}_${offlineCount}_${isDarkMode}`;
-
-        nodesData.push({
-            id: ctrlId,
-            shape: 'image',
-            image: getControllerSVG(
-                net.name || 'ZT Controller', 
-                net.network || net['network-id'], 
-                net.instance || '-', 
-                net.mtu || '-', 
-                isPrivateNet, 
-                controllerSubnet, 
-                networkMembers.length,
-                activeCount,
-                pendingCount,
-                offlineCount
-            ),
-            shapeProperties: { useImageSize: true },
-            x: ctrlPos.x !== undefined ? ctrlPos.x : undefined,
-            y: ctrlPos.y !== undefined ? ctrlPos.y : undefined,
-            fixed: false,
-            _cacheKey: controllerCacheKey
-        });
-
-        evaluatedMembers.forEach(m => {
-            const mId = 'mem_' + netKey + '_' + String(m['.id'] || m['zt-address']).replace(/[^a-zA-Z0-9]/g, '');
-            const rawZtAddress = m['zt-address'] || m['zts-id'] || '';
-            const cleanZtAddress = rawZtAddress.toLowerCase().replace(/[^a-z0-9]/g, '');
-            const memberIp = (m['ip-address'] || m.ip || '').trim();
-
-            const lastSeenText = m['last-seen'] || 'Active';
-
-            const matchedPeer = (activePeers || []).find(p => {
-                const pZt = String(p['zt-address'] || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-                const pPath = String(p['path'] || '').toLowerCase();
-                
-                const isZtMatch = cleanZtAddress && (pZt === cleanZtAddress || pZt.includes(cleanZtAddress) || cleanZtAddress.includes(pZt));
-                const isIpMatch = memberIp && pPath.includes(memberIp);
-
-                return isZtMatch || isIpMatch;
+            const networkMembers = (members || []).filter(m => {
+                const netId = net['.id'] || ''; 
+                const netNetwork = net.network || net['network-id'] || ''; 
+                const itemNetwork = m.network || '';
+                return itemNetwork === netId || itemNetwork === net.name || itemNetwork === netNetwork || !itemNetwork;
             });
 
-            let latencyValue = 'N/A';
-            if (matchedPeer && matchedPeer.latency) {
-                latencyValue = matchedPeer.latency; 
-            } else {
-                latencyValue = m._calculatedStatus === 'ONLINE' ? 'Active' : 'Offline';
-            }
+            const activeCount = networkMembers.filter(m => checkBool(m.authorized) && !(String(m.online) === 'false' || (m['last-seen'] || '').toLowerCase().includes('offline'))).length;
+            const pendingCount = networkMembers.filter(m => !checkBool(m.authorized)).length;
+            const offlineCount = networkMembers.filter(m => checkBool(m.authorized) && (String(m.online) === 'false' || (m['last-seen'] || '').toLowerCase().includes('offline'))).length;
 
-            const statusType = m._calculatedStatus;
-            let edgeColor = '#10b981';
-            let edgeDashes = false;
+            // 1. Controller Node (Sesuai Desain Gambar 1)
+            let ctrlPos = storedPositions[ctrlId];
+            const controllerDisplayText = `========================================\n` +
+                                          `\n` +
+                                          `📌 ${net.name || 'ZT Controller'}\n` +
+                                          `\n` +
+                                          `----------------------------------------\n` +
+                                          `ID: ${controllerIdText}\n` +
+                                          `Subnet: ${controllerSubnet}\n` +
+                                          `----------------------------------------\n` +
+                                          `Members : \n` +
+                                          `Active: ${activeCount} | Pend: ${pendingCount} | Off: ${offlineCount}\n` +
+                                          `========================================`;
 
-            if (statusType === 'PENDING') {
-                edgeColor = '#f59e0b';
-                edgeDashes = [4, 4];
-            } else if (statusType === 'OFFLINE') {
-                edgeColor = '#f43f5e';
-                edgeDashes = [6, 6];
-            }
-
-            let memPos = storedPositions[mId] || {};
-            
-            const memberTraffic = (trafficData || {})[memberIp] || { uploadFormatted: '0 Kbps', downloadFormatted: '0 Kbps' };
-            const nodeCacheKey = `${statusType}_${lastSeenText}_${latencyValue}_${memberTraffic.uploadFormatted}_${memberTraffic.downloadFormatted}_${isDarkMode}`; 
-
-            nodesData.push({
-                id: mId,
-                shape: 'image',
-                image: getMemberSVG(
-                    m.name || 'Branch Node', 
-                    memberIp || 'Unassigned', 
-                    rawZtAddress, 
-                    lastSeenText,  
-                    latencyValue,  
-                    statusType,
-                    memberTraffic
-                ),
-                shapeProperties: { useImageSize: true },
-                x: memPos.x !== undefined ? memPos.x : undefined,
-                y: memPos.y !== undefined ? memPos.y : undefined,
-                fixed: false,
-                _cacheKey: nodeCacheKey
+            elements.push({
+                group: 'nodes',
+                data: {
+                    id: ctrlId,
+                    label: controllerDisplayText,
+                    status: isPrivateNet ? 'PRIVATE' : 'PUBLIC',
+                    type: 'controller'
+                },
+                position: (ctrlPos && ctrlPos.x !== undefined && ctrlPos.y !== undefined) ? { x: parseFloat(ctrlPos.x), y: parseFloat(ctrlPos.y) } : undefined
             });
 
-            edgesData.push({
-                from: ctrlId,
-                to: mId,
-                color: { color: edgeColor, highlight: edgeColor, opacity: 0.9 },
-                width: 2,
-                dashes: edgeDashes, 
-                shadow: { enabled: true, color: edgeColor, size: 4, x: 0, y: 0 },
-                smooth: { type: 'cubicBezier', forceDirection: 'vertical', roundness: 0.5 }
-            });
-        });
+            // 2. Members & Edges (Sesuai Desain Gambar 2)
+            networkMembers.forEach((m) => {
+                // KUNCI ID PERMANEN MEMBER: Gunakan ZT-Address atau .id member yang unik & tetap di router
+                const rawZtAddress = m['zt-address'] || m['zts-id'] || m['.id'] || 'mem';
+                const cleanZtAddress = String(rawZtAddress).replace(/[^a-zA-Z0-9]/g, '');
+                const mId = `mem_${cleanNetId}_${cleanZtAddress}`;
 
-        if (window.visNetworksRegistry[netKey]) {
-            const netInstance = window.visNetworksRegistry[netKey];
-            const currentNodes = netInstance.body.data.nodes;
-            const currentEdges = netInstance.body.data.edges;
+                const memberIp = (m['ip-address'] || m.ip || '').trim();
+                const isAuth = checkBool(m.authorized);
+                const lastSeenText = m['last-seen'] || 'Active';
+                const secsOffline = parseMikrotikTime(lastSeenText);
 
-            nodesData.forEach(newNode => {
-                const existing = currentNodes.get(newNode.id);
-                if (existing) {
-                    if (existing._cacheKey !== newNode._cacheKey) {
-                        currentNodes.update({ 
-                            id: newNode.id, 
-                            image: newNode.image, 
-                            _cacheKey: newNode._cacheKey 
-                        });
+                const matchedPeer = (activePeers || []).find(p => {
+                    const pZt = String(p['zt-address'] || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const pPath = String(p['path'] || '').toLowerCase();
+                    return (cleanZtAddress && pZt.includes(cleanZtAddress)) || (memberIp && pPath.includes(memberIp));
+                });
+
+                let latencyValue = matchedPeer && matchedPeer.latency ? matchedPeer.latency : (secsOffline === 0 ? 'Active' : 'Offline');
+
+                let status = 'ONLINE';
+                if (!isAuth) status = 'PENDING';
+                else if (String(m.online) === 'false' || lastSeenText.toLowerCase().includes('offline') || secsOffline > 15) status = 'OFFLINE';
+
+                const tData = trafficData || {};
+                const nodeTraffic = tData[memberIp] || tData[rawZtAddress] || tData[m.name] || { uploadFormatted: '0 bps', downloadFormatted: '0 bps' };
+                let memPos = storedPositions[mId];
+
+                const memberDisplayText = `========================================\n` +
+                                      `\n` +
+                                      `🖥️ ${m.name || 'Member Node'}\n` +
+                                      `\n` +
+                                      `----------------------------------------\n` +
+                                      `ID: ${rawZtAddress} | IP: ${memberIp || 'N/A'}\n` +
+                                      `----------------------------------------\n` +
+                                      `Upload   : ${nodeTraffic.uploadFormatted || '0 bps'} | Download : ${nodeTraffic.downloadFormatted || '0 bps'}\n` +
+                                      `Last-Seen    : ${lastSeenText}\n` +
+                                      `Latency  : ${latencyValue}\n` +
+                                      `----------------------------------------\n` +
+                                      `Status: ${status}\n` +
+                                      `========================================`;
+
+                elements.push({
+                    group: 'nodes',
+                    data: {
+                        id: mId,
+                        label: memberDisplayText,
+                        status: status,
+                        type: 'member'
+                    },
+                    position: (memPos && memPos.x !== undefined && memPos.y !== undefined) ? { x: parseFloat(memPos.x), y: parseFloat(memPos.y) } : undefined
+                });
+
+                elements.push({
+                    group: 'edges',
+                    data: {
+                        id: `edge_${ctrlId}_${mId}`,
+                        source: ctrlId,
+                        target: mId,
+                        status: status
                     }
-                } else {
-                    currentNodes.add(newNode);
-                }
-            });
-
-            const newNodeIds = nodesData.map(n => n.id);
-            const obsolete = currentNodes.getIds().filter(id => !newNodeIds.includes(id));
-            if (obsolete.length > 0) {
-                currentNodes.remove(obsolete);
-            }
-
-            currentEdges.get().forEach(e => {
-                if (!edgesData.find(newE => newE.from === e.from && newE.to === e.to)) {
-                    currentEdges.remove(e.id);
-                }
-            });
-
-            edgesData.forEach(newE => {
-                const edgeId = `${newE.from}-${newE.to}`;
-                const existingEdge = currentEdges.get(edgeId) || currentEdges.get({
-                    filter: function (item) {
-                        return item.from === newE.from && item.to === newE.to;
-                    }
-                })[0];
-                
-                if (existingEdge) {
-                    // PERBAIKAN: Paksa update jika warna atau jenis garis (dashes) berubah dari offline ke online
-                    if (existingEdge.color.color !== newE.color.color || JSON.stringify(existingEdge.dashes) !== JSON.stringify(newE.dashes)) {
-                        currentEdges.update({ 
-                            id: existingEdge.id, 
-                            color: newE.color, 
-                            dashes: newE.dashes,
-                            shadow: newE.shadow 
-                        });
-                    }
-                } else {
-                    currentEdges.add({ ...newE, id: edgeId });
-                }
-            });
-
-        } else {
-            const data = { nodes: new vis.DataSet(nodesData), edges: new vis.DataSet(edgesData) };
-            const options = {
-                physics: { enabled: false },
-                interaction: { hover: false, zoomView: true, dragView: true, dragNodes: true }
-            };
-
-            const newNetwork = new vis.Network(container, data, options);
-
-            newNetwork.once("afterDrawing", function() {
-                newNetwork.fit({
-                    animation: { duration: 600, easingFunction: 'easeInOutQuad' }
                 });
             });
 
-            newNetwork.on("dragEnd", async function(params) {
-                const currentStored = await fetchServerPositions();
-                const positions = newNetwork.getPositions(params.nodes);
+            // Jika instance sudah ada, update data teks dan status saja tanpa merusak posisi
+            if (window.cyInstances[netKey]) {
+                const cy = window.cyInstances[netKey];
                 
-                params.nodes.forEach(nodeId => {
-                    if (positions[nodeId]) {
-                        currentStored[nodeId] = { x: positions[nodeId].x, y: positions[nodeId].y };
-                    }
+                cy.batch(() => {
+                    elements.forEach(ele => {
+                        const target = cy.$('#' + ele.data.id);
+                        if (target.length > 0) {
+                            target.data({
+                                label: ele.data.label,
+                                status: ele.data.status
+                            });
+                        } else {
+                            cy.add(ele);
+                        }
+                    });
+
+                    const currentEleIds = elements.map(e => e.data.id);
+                    cy.elements().forEach(ele => {
+                        if (!currentEleIds.includes(ele.id())) {
+                            cy.remove(ele);
+                        }
+                    });
                 });
-                
-                await saveServerPositions(currentStored);
+
+                return; 
+            }
+
+            const hasCustomPositions = elements.some(ele => ele.position && ele.position.x !== undefined);
+
+            const cy = cytoscape({
+                container: container,
+                elements: elements,
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'label': 'data(label)',
+                            'text-wrap': 'wrap',
+                            'color': '#f8fafc',
+                            'font-size': '12px',
+                            'font-family': 'monospace',
+                            'font-weight': 'bold',
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'background-color': '#1e293b',
+                            'border-width': '3px',
+                            'border-color': '#10b981',
+                            'width': '320px',      // Lebar card disesuaikan
+                            'height': '150px',     // Tinggi card diperbesar vertikal agar muat semua baris
+                            'shape': 'round-rectangle',
+                            'padding': '10px'
+                        }
+                    },
+                    {
+                        selector: 'node[type = "controller"]',
+                        style: {
+                            'background-color': '#3b82f6',
+                            'border-color': '#60a5fa',
+                            'width': '330px',
+                            'height': '150px',
+                            'shadow-color': '#3b82f6'
+                        }
+                    },
+                    {
+                        selector: 'node[status = "ONLINE"]',
+                        style: { 
+                            'border-color': '#10b981',
+                            'shadow-color': '#10b981'
+                        }
+                    },
+                    {
+                        selector: 'node[status = "PENDING"]',
+                        style: { 
+                            'border-color': '#f59e0b',
+                            'shadow-color': '#f59e0b'
+                        }
+                    },
+                    {
+                        selector: 'node[status = "OFFLINE"]',
+                        style: { 
+                            'border-color': '#f43f5e',
+                            'shadow-color': '#f43f5e',
+                            'opacity': 0.85 
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 4,
+                            'line-color': '#10b981',
+                            'curve-style': 'bezier',
+                            'opacity': 0.8
+                        }
+                    },
+                    {
+                        selector: 'edge[status = "PENDING"]',
+                        style: { 
+                            'line-color': '#f59e0b',
+                            'line-style': 'dashed',
+                            'line-dash-pattern': [6, 6]
+                        }
+                    },
+                    {
+                        selector: 'edge[status = "OFFLINE"]',
+                        style: { 
+                            'line-color': '#f43f5e',
+                            'line-style': 'dashed',
+                            'line-dash-pattern': [8, 4],
+                            'opacity': 0.5 
+                        }
+                    }
+                ],
+                layout: {
+                    name: hasCustomPositions ? 'preset' : 'cose',
+                    animate: false,
+                    nodeRepulsion: 1200000,
+                    idealEdgeLength: 180
+                },
+                interaction: {
+                    dragNodes: true,
+                    zoomEnabled: true,
+                    panEnabled: true
+                }
             });
 
-            window.visNetworksRegistry[netKey] = newNetwork;
-        }
-    });
+            cy.ready(() => {
+                cy.resize();
+                if (!hasCustomPositions) {
+                    cy.fit();
+                }
+            });
+
+            // Simpan posisi ke server dengan ID permanen yang berbasis ZT-Address
+            cy.on('free', 'node', async function(evt) {
+                const node = evt.target;
+                const pos = node.position();
+                console.log('🖱️ Node berhasil digeser (free):', node.id(), 'Posisi:', pos);
+
+                try {
+                    const currentStored = await fetchServerPositions();
+                    currentStored[node.id()] = { x: pos.x, y: pos.y };
+
+                    const res = await fetch('/api/topology/positions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(currentStored)
+                    });
+                    const json = await res.json();
+                    console.log('📡 Respon Server Simpan Posisi:', json);
+                } catch (err) {
+                    console.error('❌ Gagal kirim posisi ke server:', err);
+                }
+            });
+
+            window.cyInstances[netKey] = cy;
+        });
+    }, 150);
 };
 </script>

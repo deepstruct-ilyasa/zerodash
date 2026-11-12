@@ -126,7 +126,9 @@ document.addEventListener('alpine:init', () => {
       }, 100);
 
       setInterval(() => {
-        this.fetchData(true);
+        if (!document.hidden) {
+          this.fetchData(true);
+        }
       }, 5000);
     },
 
@@ -169,26 +171,69 @@ document.addEventListener('alpine:init', () => {
           fetch('/api/controller/traffic-stats').then(r => r.json())
         ]);
 
+        let hasTopolgyDataChanged = false;
+
         if (netRes.status === 'fulfilled' && netRes.value.success) {
-          this.networks = netRes.value.data || [];
+          const newData = netRes.value.data || [];
+          if (JSON.stringify(this.networks) !== JSON.stringify(newData)) {
+            this.networks.length = 0; // Memory Flush
+            this.networks = newData;
+            hasTopolgyDataChanged = true;
+          }
         }
+        
         if (memRes.status === 'fulfilled' && memRes.value.success) {
-          this.members = memRes.value.data || [];
+          const newData = memRes.value.data || [];
+          if (JSON.stringify(this.members) !== JSON.stringify(newData)) {
+            this.members.length = 0; // Memory Flush
+            this.members = newData;
+            hasTopolgyDataChanged = true;
+          }
         }
+        
         if (instRes.status === 'fulfilled' && instRes.value.success) {
-          this.instances = instRes.value.data || [];
+          const newData = instRes.value.data || [];
+          if (JSON.stringify(this.instances) !== JSON.stringify(newData)) {
+            this.instances.length = 0; // Memory Flush
+            this.instances = newData;
+          }
         }
+        
         if (ifaceRes.status === 'fulfilled' && ifaceRes.value.success) {
-          this.routerInterfaces = ifaceRes.value.data || [];
+          const newData = ifaceRes.value.data || [];
+          if (JSON.stringify(this.routerInterfaces) !== JSON.stringify(newData)) {
+             this.routerInterfaces.length = 0; // Memory Flush
+             this.routerInterfaces = newData;
+          }
         }
+        
         if (peerRes.status === 'fulfilled' && peerRes.value.success) {
-          this.peers = peerRes.value.data || [];
+          const newData = peerRes.value.data || [];
+          if (JSON.stringify(this.peers) !== JSON.stringify(newData)) {
+            this.peers.length = 0; // Memory Flush
+            this.peers = newData;
+            hasTopolgyDataChanged = true;
+          }
         }
+        
         if (trafficRes.status === 'fulfilled' && trafficRes.value.success) {
-          this.trafficData = trafficRes.value.data || {};
+          const newData = trafficRes.value.data || {};
+          if (JSON.stringify(this.trafficData) !== JSON.stringify(newData)) {
+            this.trafficData = {}; // Memory Flush (Kosongkan wadah objek lama)
+            this.trafficData = newData;
+            // KUNCI OPTIMASI: 'hasTopolgyDataChanged' TIDAK di-set ke true di sini, 
+            // agar Canvas SVG topologi tidak digambar ulang (mencegah memory leak 400MB+),
+            // tetapi data angka traffic di tabel DOM HTML tetap terupdate secara real-time.
+          }
         }
-        if (typeof window.initAllTopologies === 'function' && this.networks.length > 0) {
+
+        // Panggil render ulang topologi HANYA jika ada perubahan member, network, atau status peer (online/offline)
+        if (typeof window.initAllTopologies === 'function' && this.networks.length > 0 && hasTopolgyDataChanged) {
           window.initAllTopologies(this.networks, this.members, this.peers, this.trafficData, this.parseBool.bind(this));
+        }
+
+        if (hasTopolgyDataChanged) {
+            setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
         }
       } catch (err) {
         if (!silent) this.addLog('ERROR', 'Gagal sync data: ' + err.message);
