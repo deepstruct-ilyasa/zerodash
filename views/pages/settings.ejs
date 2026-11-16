@@ -326,7 +326,11 @@
           const json = await res.json();
           
           if (json.success) {
+            // Menggunakan alert bawaan browser sesuai keinginan Anda
             alert('Kredensial Controller Berhasil Disimpan !!');
+            
+            // 🚀 MENGIRIM SINYAL AGAR TRAFFIC FLOW OTOMATIS FETCH DATA ULANG
+            window.dispatchEvent(new CustomEvent('controller-updated'));
           } else {
             alert('Gagal: ' + json.message);
           }
@@ -374,6 +378,17 @@
       },
 
       init() {
+        // Load awal saat halaman dibuka
+        this.reloadTrafficFlowData();
+
+        // 🚀 DENGARKAN EVENT KETIKA MASTER CONTROLLER DISIMPAN
+        window.addEventListener('controller-updated', () => {
+          console.log('🔄 Mendeteksi perubahan Master Controller, menyinkronkan ulang Traffic Flow...');
+          this.reloadTrafficFlowData();
+        });
+      },
+
+      reloadTrafficFlowData() {
         this.loadInterfaces().then(() => {
           this.loadGeneral();
         });
