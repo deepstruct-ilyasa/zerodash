@@ -30,7 +30,6 @@ x-init="if (darkMode) document.documentElement.classList.add('dark');"
 </head>
 <body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex items-center justify-center p-4 antialiased overflow-hidden transition-colors duration-200">
   
-  <!-- Tombol Toggle Tema (Pojok Kanan Atas) yang Jauh Lebih Ringkas -->
   <button @click="toggleTheme()" class="absolute top-6 right-6 p-2.5 shadow-sm transition flex items-center justify-center cursor-pointer">
     <i :data-lucide="darkMode ? 'sun' : 'moon'" :class="darkMode ? 'text-amber-400' : 'text-slate-600 dark:text-slate-300'" class="w-6 h-6"></i>
   </button>

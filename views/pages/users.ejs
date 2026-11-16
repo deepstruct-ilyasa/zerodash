@@ -62,7 +62,7 @@
         </div>
         <div>
           <label class="block text-slate-400 mb-1" x-text="showEditModal ? 'Password Baru (Kosongkan jika tidak diubah)' : 'Password'"></label>
-          <input type="password" x-model="form.password" :required="!showEditModal" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500">
+          <input type="password" x-model="form.password" :required="!showEditModal" autocomplete="new-password" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500">
         </div>
         <div>
           <label class="block text-slate-400 mb-1">Role Akses</label>
