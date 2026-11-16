@@ -121,6 +121,42 @@
 
   <script src="/js/app.js"></script>
   <script>
+    const originalFetch = window.fetch;
+    window.fetch = async function(...args) {
+      try {
+        const response = await originalFetch(...args);
+        
+        // Jika server menolak karena unauthorized (401) atau ter-redirect ke login
+        if (response.status === 401 || response.url.includes('/login')) {
+          console.warn('⚠️ Sesi telah berakhir. Mengalihkan ke halaman login...');
+          window.location.href = '/login';
+          return response;
+        }
+
+        // Cek apakah respons berupa teks HTML (tanda terlempar ke halaman login)
+        const clone = response.clone();
+        const contentType = clone.headers.get('content-type') || '';
+        if (contentType.includes('text/html')) {
+          const text = await clone.text();
+          if (text.includes('<!DOCTYPE html>') && (text.includes('login') || text.includes('Masuk') || text.includes('Password'))) {
+            console.warn('⚠️ Terdeteksi halaman login pada respons API. Redirect paksa...');
+            window.location.href = '/login';
+            return response;
+          }
+        }
+
+        return response;
+      } catch (err) {
+        // Jika terjadi SyntaxError karena JSON gagal diparsing akibat sesi habis, lempar ke login
+        if (err instanceof SyntaxError || err.message.includes('Unexpected token')) {
+          console.warn('⚠️ Sesi kedaluwarsa terdeteksi dari kegagalan parsing JSON. Redirect ke /login...');
+          window.location.href = '/login';
+          return;
+        }
+        throw err;
+      }
+    };
+    
     // Jalankan saat pertama kali halaman dimuat
     document.addEventListener('DOMContentLoaded', () => {
       if (window.lucide) {
