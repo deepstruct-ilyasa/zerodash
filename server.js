@@ -165,7 +165,7 @@ setInterval(() => {
     ips.forEach(ip => {
         freshTrafficStats[ip] = {
             uploadRaw: rawTrafficCache[ip].upload,
-            downloadRaw: rawTrafficCache[ip].upload,
+            downloadRaw: rawTrafficCache[ip].download,
             uploadFormatted: formatBandwidth(rawTrafficCache[ip].upload),
             downloadFormatted: formatBandwidth(rawTrafficCache[ip].download)
         };
